@@ -17,8 +17,8 @@ var User = mongoose.model('User');
 
 // Définition de la méthode de login
 passport.use('local-login', new LocalStrategy({
-  usernameField: 'email',
-  passwordField: 'password',
+  usernameField: 'user[email]',
+  passwordField: 'user[password]',
   session: false,
   passReqToCallback: true
 },
@@ -27,10 +27,10 @@ function(req, email, password, done) {
     // Si des erreurs existent, on les renvoie
     if(err) return done(err);
     // On contrôle l'existence de l'utilisateur
-    if(!user) return done(null, false, req.flash('loginMessage', 'No user found.'));
+    if(!user) return done(null, false, { "email": "is invalid"});
 
     // On contrôle le mot de passe
-    if (!user.validPassword(password)) return done(null, false, req.flash('loginMessage', 'Oops! Wrong password.'));
+    if (!user.validPassword(password)) return done(null, false, {"password" : "is invalid"});
 
     // On renvoie l'utilisateur trouvé
     return done(null, user.toAuthJSON());
@@ -40,8 +40,8 @@ function(req, email, password, done) {
 
 // Définition de la méthode d'inscription
 passport.use('local-register', new LocalStrategy({
-  usernameField: 'email',
-  passwordField: 'password',
+  usernameField: 'user[email]',
+  passwordField: 'user[password]',
   passReqToCallback: true,  
 },
 function(req, email, password, done) {
@@ -49,8 +49,8 @@ function(req, email, password, done) {
     // Si des erreurs existent, on les renvoie
     if(err) return done(err);
     // On contrôle l'existence de l'utilisateur
-    if(user) return done(null, false, req.flash('registerMessage', 'That email is already taken.'));
-    // On créee un nouvel utilisateur
+    if(user) return done(null, false, { "email": "is already taken"});
+    // On crée un nouvel utilisateur
     var user = new User()
     user.username = req.body.email;
     user.email = req.body.email;

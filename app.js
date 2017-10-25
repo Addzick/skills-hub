@@ -18,24 +18,12 @@ var cors = require('cors');
 var passport = require('passport');
 var errorhandler = require('errorhandler');
 var mongoose = require('mongoose');
-var flash    = require('connect-flash');
 
 // Sommes-nous en mode production ?
 var isProduction = process.env.NODE_ENV === 'production';
 
 // Création de l'objet global pour l'application Express
 var app = express();
-
-// Définition du template engine pour la génération des vues HTML
-app.set('view engine', 'pug');
-app.set('views', [
-  path.join(__dirname, 'views'),
-  path.join(__dirname, 'views/_shared/'),
-  path.join(__dirname, 'views/article/'),
-  path.join(__dirname, 'views/tags/'),
-  path.join(__dirname, 'views/user/'),
-]);
-
 
 // Définition du cross-origin resource sharing (CORS). 
 // C'est un mécanisme de permettant d'accèder à des ressources protégées (ex : une police de caractère) depuis un autre domaine que celui de l'application
