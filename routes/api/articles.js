@@ -11,7 +11,9 @@ var mongoose = require('mongoose');
 
 // Récupération des modèles Mongoose utilisés
 var Article = mongoose.model('Article');
+var Category = mongoose.model('Category');
 var Comment = mongoose.model('Comment');
+var Like = mongoose.model('Like');
 var User = mongoose.model('User');
 
 // Récupération de l'objet de traitement de l'authentification
@@ -21,6 +23,7 @@ var auth = require('../auth');
 router.param('article', function(req, res, next, slug) {
   Article.findOne({ slug: slug})
     .populate('author')
+    .populate('categories')
     .then(function (article) {
       if (!article) { 
         return res.sendStatus(404);
@@ -45,142 +48,178 @@ router.param('comment', function(req, res, next, id) {
   }).catch(next);
 });
 
+// Préchargement des objets 'Like' pour les routes contenant le paramètre ':like'
+router.param('like', function(req, res, next, id) {
+  Like.findById(id).then(function(like){
+    if(!like) { 
+      return res.sendStatus(404); 
+    }
+    req.like = like;
+
+    return next();
+
+  }).catch(next);
+});
+
 // GET : http://<url-site-web:port>/api/articles/
-// Renvoie la liste complètes des articles après pagination
+// Renvoie la liste des articles après pagination
 router.get('/', auth.optional, function(req, res, next) {
   var query = {};
-  var limit = 20;
-  var offset = 0;
+  var opts = {
+    skip: 0,
+    limit: 20,
+    sort: { createdAt: 'desc' }
+  };
 
-  if(typeof req.query.limit !== 'undefined'){
-    limit = req.query.limit;
+  // A-t-on un titre ?
+  if(typeof req.query.title !== 'undefined' ){
+    query.title = { "$regex" : '.*' + req.query.title + '.*' };
   }
 
-  if(typeof req.query.offset !== 'undefined'){
-    offset = req.query.offset;
-  }
-
-  if( typeof req.query.tag !== 'undefined' ){
-    query.tagList = {"$in" : [req.query.tag]};
-  }
-
-  Promise.all([
-    req.query.author ? User.findOne({username: req.query.author}) : null,
-    req.query.favorited ? User.findOne({username: req.query.favorited}) : null
-  ]).then(function(results){
-    var author = results[0];
-    var favoriter = results[1];
-
-    if(author){
+  // A-t-on un auteur ?
+  if(typeof req.query.author !== 'undefined') {
+    User.findOne({ username: req.query.author }).then(function(user){
       query.author = author._id;
-    }
+    });
+  }
+  
+  // A-t-on un categorie ?
+  if(typeof req.query.category !== 'undefined') {
+    Category.findOne({ title: req.query.category }).then(function(category){
+      query.categories = {"$in" : [category._id] };
+    });
+  }
 
-    if(favoriter){
-      query._id = {$in: favoriter.favorites};
-    } else if(req.query.favorited){
-      query._id = {$in: []};
-    }
+  // A-t-on un tag ?  
+  if(typeof req.query.tag !== 'undefined' ){
+    query.tags = {"$in" : [req.query.tag] };
+  }
 
-    return Promise.all([
-      Article.find(query)
-        .limit(Number(limit))
-        .skip(Number(offset))
-        .sort({createdAt: 'desc'})
-        .populate('author')
-        .exec(),
-      Article.count(query).exec(),
-      req.payload ? User.findById(req.payload.id) : null,
-    ]).then(function(results){
-      var articles = results[0];
-      var articlesCount = results[1];
-      var user = results[2];
+  // A-t-on une limite ?
+  if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
+    opts.limit = Number(size);
+  }
 
-      return res.json({
-        articles: articles.map(function(article){
-          return article.toJSONFor(user);
-        }),
-        articlesCount: articlesCount
-      });
+  // A-t-on une page ?
+  if(typeof req.query.page !== 'undefined' && req.query.page >= 1) {
+    opts.skip = Number((page - 1) * size);
+  }
+
+  // A-t-on un champ pour le tri ?
+  if(typeof req.query.sort !== undefined) {
+    opts.sort = req.query.sort;
+  }
+  
+  return Promise.all([
+    Article.find(query,options)
+      .populate('author')
+      .populate('categories')
+      .exec(),
+    Article.count(query).exec()
+  ]).then(function(results){
+    var articles = results[0];
+    var count = results[1];
+    return res.json({
+      articles: articles,
+      count: count,
+      skip: opts.skip,
+      limit: opts.limit,
+      sort: opts.sort
     });
   }).catch(next);
+  
 });
 
 // GET : http://<url-site-web:port>/api/articles/feed
 // Renvoie les articles publiés par les utilisateurs suivis par l'utilisateur authentifié
 router.get('/feed', auth.required, function(req, res, next) {
-  var limit = 20;
-  var offset = 0;
-
-  if(typeof req.query.limit !== 'undefined'){
-    limit = req.query.limit;
-  }
-
-  if(typeof req.query.offset !== 'undefined'){
-    offset = req.query.offset;
-  }
-
   User.findById(req.payload.id).then(function(user){
     if (!user) { return res.sendStatus(401); }
 
-    Promise.all([
-      Article.find({ author: {$in: user.following}})
-        .limit(Number(limit))
-        .skip(Number(offset))
-        .populate('author')
-        .exec(),
-      Article.count({ author: {$in: user.following}})
-    ]).then(function(results){
-      var articles = results[0];
-      var articlesCount = results[1];
-
-      return res.json({
-        articles: articles.map(function(article){
-          return article.toJSONFor(user);
-        }),
-        articlesCount: articlesCount
+    var query = {
+      categories: { '$in': user.categories }
+    };
+    var opts = {
+      skip: 0,
+      limit: 20,
+      sort: { createdAt: 'desc' }
+    };
+  
+    // A-t-on un titre ?
+    if(typeof req.query.title !== 'undefined' ){
+      query.title = { "$regex" : '.*' + req.query.title + '.*' };
+    }
+  
+    // A-t-on un auteur ?
+    if(typeof req.query.author !== 'undefined') {
+      User.findOne({ username: req.query.author }).then(function(user){
+        query.author = author._id;
       });
-    }).catch(next);
+    }
+  
+    // A-t-on un categorie ?
+    if(typeof req.query.category !== 'undefined') {
+      Category.findOne({ title: req.query.category }).then(function(category){
+        query.categories = {"$in" : [category._id] };
+      });
+    }
+
+    // A-t-on un tag ?  
+    if(typeof req.query.tag !== 'undefined' ) {
+      query.tags = {"$in" : [req.query.tag] };
+    } 
+    
+    // A-t-on une taille ?
+    if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
+      opts.limit = Number(size);
+    }
+  
+    // A-t-on une page ?
+    if(typeof req.query.page !== 'undefined' && req.query.page >= 1) {
+      opts.skip = Number((page - 1) * size);
+    }
+    // A-t-on un champ pour le tri ?
+    if(typeof req.query.sort !== undefined) {
+      opts.sort = req.query.sort;
+    }
+
+    Promise.all([
+      Article.find(query,opts)
+      .populate('author')
+      .populate('categories')
+      .exec(),
+      Article.count(query).exec()])
+      .then(function(results ){
+        var articles = results[0];
+        var count = results[1];
+        return res.json({
+          articles: articles,
+          count: count,
+          page: Number((opts.skip / opts.limit) + 1),
+          size: opts.limit,
+          sort: opts.sort
+        });
+      }).catch(next);
   });
+});
+
+// GET : http://<url-site-web:port>/api/articles/tags/
+// Renvoie la liste complète des tags de tous les articles postés
+router.get('/tags', function(req, res, next) {
+  Article.find().distinct('tags').then(function(tags){
+    return res.json({tags: tags});
+  }).catch(next);
 });
 
 // GET : http://<url-site-web:port>/api/articles/:article
 // Renvoie l'article correspondant
 router.get('/:article', auth.optional, function(req, res, next) {
-  Promise.all([
-    req.payload ? User.findById(req.payload.id) : null,
-    req.article.populate('author').execPopulate()
-  ]).then(function(results){
-    var user = results[0];
-
-    return res.json({article: req.article.toJSONFor(user)});
-  }).catch(next);
-});
-
-// GET : http://<url-site-web:port>/api/articles/:article/comments
-// Renvoie la liste complète des commentaires d'un article
-router.get('/:article/comments', auth.optional, function(req, res, next){
-  Promise.resolve(req.payload ? User.findById(req.payload.id) : null).then(function(user){
-    return req.article.populate({
-      path: 'comments',
-      populate: {
-        path: 'author'
-      },
-      options: {
-        sort: {
-          createdAt: 'desc'
-        }
-      }
-    }).execPopulate().then(function(article) {
-      return res.json({comments: req.article.comments.map(function(comment){
-        return comment.toJSONFor(user);
-      })});
-    });
-  }).catch(next);
+  return res.status(200).json(req.article);
 });
 
 // POST : http://<url-site-web:port>/api/articles/:article
-// Crée et publie l'article contenu dans le corps de la requête HTTP
-router.post('/', auth.required, function(req, res, next) {
+// Crée un article
+router.post('/:article', auth.required, function(req, res, next) {
   User.findById(req.payload.id).then(function(user){
     if (!user) { return res.sendStatus(401); }
 
@@ -241,34 +280,25 @@ router.delete('/:article', auth.required, function(req, res, next) {
   }).catch(next);
 });
 
-// POST : http://<url-site-web:port>/api/articles/:article/favorite
-// Ajout l'article au favori de l'utilisateur authentifié
-router.post('/:article/favorite', auth.required, function(req, res, next) {
-  var articleId = req.article._id;
 
-  User.findById(req.payload.id).then(function(user){
-    if (!user) { return res.sendStatus(401); }
-
-    return user.favorite(articleId).then(function(){
-      return req.article.updateFavoriteCount().then(function(article){
-        return res.json({article: article.toJSONFor(user)});
-      });
-    });
-  }).catch(next);
-});
-
-// DELETE : http://<url-site-web:port>/api/articles/:article
-// Supprime un article de la liste des favoris de l'utilisateur authentifié
-router.delete('/:article/favorite', auth.required, function(req, res, next) {
-  var articleId = req.article._id;
-
-  User.findById(req.payload.id).then(function (user){
-    if (!user) { return res.sendStatus(401); }
-
-    return user.unfavorite(articleId).then(function(){
-      return req.article.updateFavoriteCount().then(function(article){
-        return res.json({article: article.toJSONFor(user)});
-      });
+// GET : http://<url-site-web:port>/api/articles/:article/comments
+// Renvoie la liste complète des commentaires d'un article
+router.get('/:article/comments', auth.optional, function(req, res, next){
+  Promise.resolve(req.payload ? User.findById(req.payload.id) : null).then(function(user){
+    return req.article.populate({
+      path: 'comments',
+      populate: {
+        path: 'author'
+      },
+      options: {
+        sort: {
+          createdAt: 'desc'
+        }
+      }
+    }).execPopulate().then(function(article) {
+      return res.json({comments: req.article.comments.map(function(comment){
+        return comment.toJSONFor(user);
+      })});
     });
   }).catch(next);
 });

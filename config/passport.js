@@ -33,7 +33,7 @@ function(req, email, password, done) {
     if (!user.validPassword(password)) return done(null, false, {"password" : "is invalid"});
 
     // On renvoie l'utilisateur trouvé
-    return done(null, user.toAuthJSON());
+    return done(null, user);
   });
 })
 );
@@ -68,7 +68,7 @@ function(req, email, password, done) {
       // Si des erreurs existent, on les renvoie
       if(err) return done(err);      
       // On renvoie le nouvel utilisateur
-      return done(null, newUser.toAuthJSON());
+      return done(null, newUser);
     });
   })
 }));

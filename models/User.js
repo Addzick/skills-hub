@@ -30,14 +30,14 @@ var UserSchema = new mongoose.Schema({
     latitude: Number,
     longitude: Number,
   },      
-  favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Article' }],
-  following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }],
+  notes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Rating' }],
   hash: String,
   salt: String
 }, {timestamps: true});
 
 // Définition du plugin utilisé pour la validation des champs uniques
-UserSchema.plugin(uniqueValidator, {message: 'is already taken.'});
+UserSchema.plugin(uniqueValidator, { message: 'is already taken.' });
 
 // Définition de la méthode utilisée pour mettre à jour le mot de passe d'un utilisateur
 UserSchema.methods.setPassword = function(password){
@@ -70,88 +70,6 @@ UserSchema.methods.generateJWT = function() {
     username: this.username,
     exp: parseInt(exp.getTime() / 1000),
   }, secret);
-};
-
-// Définition de la méthode utilisée pour representer un utilisateur authentifé
-UserSchema.methods.toAuthJSON = function(){
-  return {
-    username: this.username,
-    email: this.email,
-    lastname: this.lastname,
-    firstname: this.firstname,
-    bio: this.bio,
-    image: this.image,
-    address: {
-      street: this.address.street,
-      zip: this.address.zip,
-      city: this.address.city,
-      latitude: this.address.latitude,
-      longitude: this.address.longitude
-    },
-    token: this.generateJWT(),
-  };  
-};
-
-// Définition de la méthode utilisée pour representer un profil utilisateur
-UserSchema.methods.toProfileJSONFor = function(user){
-  return {
-    username: this.username,
-    email: this.email,
-    lastname: this.lastname,
-    firstname: this.firstname,
-    bio: this.bio,
-    image: this.image,
-    address: {
-      street: this.address.street,
-      zip: this.address.zip,
-      city: this.address.city,
-      latitude: this.address.latitude,
-      longitude: this.address.longitude
-    },
-    following: user ? user.isFollowing(this._id) : false
-  };
-};
-
-// Définition de la méthode d'ajout d'un article favori
-UserSchema.methods.favorite = function(id){
-  if(this.favorites.indexOf(id) === -1){
-    this.favorites.push(id);
-  }
-  return this.save();
-};
-
-// Définition de la méthode de suppression d'un article favori
-UserSchema.methods.unfavorite = function(id){
-  this.favorites.remove(id);
-  return this.save();
-};
-
-// Définition de la méthode de contrôle si l'article est déjà un favori
-UserSchema.methods.isFavorite = function(id){
-  return this.favorites.some(function(favoriteId){
-    return favoriteId.toString() === id.toString();
-  });
-};
-
-// Définition de la méthode d'ajout de suivi d'un utilisateur
-UserSchema.methods.follow = function(id){
-  if(this.following.indexOf(id) === -1){
-    this.following.push(id);
-  }
-  return this.save();
-};
-
-// Défintion de la méthode de suppression de suivi d'un utilisateur
-UserSchema.methods.unfollow = function(id){
-  this.following.remove(id);
-  return this.save();
-};
-
-// Définition de la méthode de contrôle si l'utilisateur est déjà suivi
-UserSchema.methods.isFollowing = function(id){
-  return this.following.some(function(followId){
-    return followId.toString() === id.toString();
-  });
 };
 
 // Attribution du schéma au modèle d'utilisateur
