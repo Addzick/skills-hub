@@ -9,17 +9,17 @@
 var router = require('express').Router();
 
 // Récupération des routeurs prédéfinis pour chaque composant de l'api
-var accounts      = require('./accounts');
-var tenders       = require('./tenders');
-var tasks         = require('./tasks');
+var users         = require('./users');
 var articles      = require('./articles');
+//var tenders       = require('./tenders');
+//var tasks         = require('./tasks');
 
 
 // Définition des routes d'accès pour chaque composant de l'api
-router.use('/', accounts);
-router.use('/tenders', tenders);
-router.use('/tasks', tasks);
+router.use('/', users);
 router.use('/articles', articles);
+//router.use('/tenders', tenders);
+//router.use('/tasks', tasks);
 
 // Définition du traitement de transformation des erreurs de validation
 router.use(function(err, req, res, next){

@@ -36,29 +36,5 @@ var TenderSchema = new mongoose.Schema({
     canceledAt: Date, 
 }, { timestamps: true });
 
-// Définition de la méthode de publication
-TenderSchema.methods.publish = function(){
-    if(!this.publishedAt) {
-        this.publishedAt = Date.now;
-    }
-    return this.save();
-};
-
-// Définition de la méthode de cloture
-TenderSchema.methods.close = function(){
-    if(!this.closedAt) {
-        this.closedAt = Date.now;
-    }
-    return this.save();
-};
-
-// Définition de la méthode d'annulation
-TenderSchema.methods.cancel = function(){
-    if(!this.canceledAt) {
-        this.canceledAt = Date.now;
-    }
-    return this.save();
-};
-
 // Attribution du schéma au modèle d'appel d'offres
 module.exports = mongoose.model('Tender', TenderSchema);

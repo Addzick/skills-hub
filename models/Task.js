@@ -28,37 +28,5 @@ var TaskSchema =  new mongoose.Schema({
     canceledAt: Date,
 }, { timestamps: true });
 
-// Définition de la méthode de publication
-TaskSchema.methods.publish = function(){
-    if(!this.publishedAt) {
-        this.publishedAt = Date.now;
-    }
-    return this.save();
-};
-
-// Définition de la méthode de confirmation
-TaskSchema.methods.confirm = function(){
-    if(!this.confirmedAt) {
-        this.confirmedAt = Date.now;
-    }
-    return this.save();
-};
-
-// Définition de la méthode de paiement
-TaskSchema.methods.pay = function(){
-    if(!this.paidAt) {
-        this.paidAt = Date.now;
-    }
-    return this.save();
-};
-
-// Définition de la méthode d'annulation
-TaskSchema.methods.cancel = function(){
-    if(!this.canceledAt) {
-        this.canceledAt = Date.now;
-    }
-    return this.save();
-};
-
 // Attribution du schéma au modèle de tâche
 module.exports = mongoose.model('Task', TaskSchema);

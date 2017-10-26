@@ -23,13 +23,5 @@ var RatingSchema = new mongoose.Schema({
     publishedAt: Date,    
 });
 
-// Définition de la méthode de publication
-RatingSchema.methods.publish = function(){
-    if(!this.publishedAt) {
-        this.publishedAt = Date.now;
-    }
-    return this.save();
-};
-
 // Attribution du schéma au modèle de note
 module.exports = mongoose.model('Rating', RatingSchema);

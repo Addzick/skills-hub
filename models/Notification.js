@@ -18,21 +18,5 @@ var NotificationSchema =  new mongoose.Schema({
     readAt:  Date
 }, { timestamps: true });
 
-// Définition de la méthode d'envoi
-NotificationSchema.methods.send = function(){
-    if(!this.sentAt) {
-        this.rejectedAt = Date.now;
-    }
-    return this.save();
-};
-
-// Définition de la méthode de lecture
-NotificationSchema.methods.read = function(){
-    if(!this.readAt) {
-        this.readAt = Date.now;
-    }
-    return this.save();
-};
-
 // Attribution du schéma au modèle de notification
 module.exports = mongoose.model('Notification', NotificationSchema);

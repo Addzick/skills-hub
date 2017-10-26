@@ -29,37 +29,5 @@ var PropositionSchema =  new mongoose.Schema({
     canceledAt: Date,
 });
 
-// Définition de la méthode de publication
-PropositionSchema.methods.publish = function(){
-    if(!this.publishedAt) {
-        this.publishedAt = Date.now;
-    }
-    return this.save();
-};
-
-// Définition de la méthode d'acceptation
-PropositionSchema.methods.accept = function(){
-    if(!this.acceptedAt) {
-        this.acceptedAt = Date.now;
-    }
-    return this.save();
-};
-
-// Définition de la méthode de rejet
-PropositionSchema.methods.reject = function(){
-    if(!this.rejectedAt) {
-        this.rejectedAt = Date.now;
-    }
-    return this.save();
-};
-
-// Définition de la méthode d'annulation
-PropositionSchema.methods.cancel = function(){
-    if(!this.canceledAt) {
-        this.canceledAt = Date.now;
-    }
-    return this.save();
-};
-
 // Attribution du schéma au modèle de proposition
 module.exports = mongoose.model('Proposition', PropositionSchema);
