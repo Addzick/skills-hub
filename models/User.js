@@ -30,8 +30,8 @@ var UserSchema = new mongoose.Schema({
     latitude: Number,
     longitude: Number,
   },      
-  favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }],
-  notes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Rating' }],
+  favorites: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'Category' }],
+  notes: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'Rating' }],
   hash: String,
   salt: String
 }, {timestamps: true});

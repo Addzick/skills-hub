@@ -19,8 +19,8 @@ var TaskSchema =  new mongoose.Schema({
     onSite: Boolean,
     materialIsSupplied: Boolean,    
     // References
-    worker: { type: mongoose.SchemaType.ObjectId, ref: "User" },
-    customer:{ type: mongoose.SchemaType.ObjectId, ref: "Tender" },    
+    worker: { type: mongoose.SchemaTypes.ObjectId, ref: "User" },
+    customer:{ type: mongoose.SchemaTypes.ObjectId, ref: "Tender" },    
     // Timestamps
     publishedAt: Date,
     confirmedAt: Date,

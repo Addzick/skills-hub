@@ -18,10 +18,10 @@ var ArticleSchema = new mongoose.Schema({
   body: String,
   tags: [String],
   medias: [String],
-  author: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  categories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }],
-  comments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }],
-  likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Like' }],
+  author: { type: mongoose.SchemaTypes.ObjectId, ref: 'User' },
+  categories: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'Category' }],
+  comments: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'Comment' }],
+  likes: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'Like' }],
   publishedAt: Date
 }, { timestamps: true });
 
@@ -39,14 +39,6 @@ ArticleSchema.pre('validate', function(next){
 // Définition du traitement de "slugification"
 ArticleSchema.methods.slugify = function() {
   this.slug = slug(this.title) + '-' + (Math.random() * Math.pow(36, 6) | 0).toString(36);
-};
-
-// Définition de la méthode de publication
-ArticleSchema.methods.publish = function(){
-  if(!this.publishedAt) {
-      this.publishedAt = Date.now;
-  }
-  return this.save();
 };
 
 // Attribution du schéma au modèle d'article

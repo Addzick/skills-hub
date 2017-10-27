@@ -18,6 +18,33 @@ var Event = mongoose.model('Event');
 
 // Définition des fonctions exportables
 module.exports = {
+    
+    // ******************************//
+    // GETBYID
+    // ******************************//
+    getById: function(req, res, next) {
+        Article
+        .findById(req.params.id)
+        .populate('author')
+        .populate('categories')
+        .populate({
+            path: 'comments',
+            options: {
+                limit: 20,
+                sort: {
+                    createdAt: 'desc'
+                }
+            }
+        })
+        .exec(function (err, article) {
+            // On contrôle s'il y a une erreur
+            if(err) return res.status(500).json(err);
+            // On contrôle l'article trouvé
+            if (!article) { return res.sendStatus(404); }
+            // On renvoie l'article
+            return res.status(200).json(article);
+        });
+    },
     // ******************************//
     // GETALL
     // ******************************//
@@ -269,33 +296,6 @@ module.exports = {
     },
 
     // ******************************//
-    // GETBYID
-    // ******************************//
-    getById: function(req, res, next) {
-        Article
-        .findById(req.params.id)
-        .populate('author')
-        .populate('categories')
-        .populate({
-            path: 'comments',
-            options: {
-                limit: 20,
-                sort: {
-                    createdAt: 'desc'
-                }
-            }
-        })
-        .exec(function (err, article) {
-            // On contrôle s'il y a une erreur
-            if(err) return res.status(500).json(err);
-            // On contrôle l'article trouvé
-            if (!article) { return res.sendStatus(404); }
-            // On renvoie l'article
-            return res.status(200).json(article);
-        });
-    },
-
-    // ******************************//
     // CREATE
     // ******************************//
     create: function(req, res) {
@@ -334,9 +334,9 @@ module.exports = {
             // On récupére l'article à modifier
             var article = req.body.article;
             // On contrôle que l'utilisateur soit bien l'auteur
-            if(article.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
+            if(article.author.toString() !== user._id.toString()) { return res.sendStatus(403); }
             // On recherche l'article
-            Article.findByIdAndUpdate(req.params.id, { $set: { publishedAt: Date.now }}, function(err, artUpdated) {
+            Article.findByIdAndUpdate(article._id, { $set: { publishedAt: new Date() }}, function(err, artUpdated) {
                 // On contrôle s'il y a une erreur
                 if(err) return res.status(500).json(err);  
                 // On contrôle l'article trouvé
@@ -478,7 +478,7 @@ module.exports = {
             // On récupére le commentaire à supprimer
             var comment = req.body.comment;
             // On contrôle que l'utilisateur soit bien l'auteur
-            if(comment.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
+            if(comment.author.toString() !== user._id.toString()) { return res.sendStatus(403); }
             // On supprime l'article
             Comment.findByIdAndRemove(comment._id,function(err, commentDeleted) {
                 // On contrôle s'il y a une erreur
@@ -486,7 +486,8 @@ module.exports = {
                 // On contrôle le commentaire supprimé
                 if(!commentDeleted) return res.status(500).json({ message: "An error occured while deleting a comment."});
                 // On supprime le commenaire de l'article
-                Article.findByIdAndUpdate(req.params.id,{ $pull: { comments: { _id: commentDeleted._id }}}, function(err, artUpdated){
+                var article = req.body.article;
+                Article.findByIdAndUpdate(article._id, { $pull: { comments: { _id: commentDeleted._id }}}, function(err, artUpdated){
                    // On contrôle s'il y a une erreur
                    if(err) return res.status(500).json(err);
                    // On contrôle l'article
@@ -568,7 +569,7 @@ module.exports = {
                 // On contrôle le like supprimé
                 if(!likeDeleted) return res.status(500).json({ message: "An error occured while deleting a like."});
                 // On supprime le like de l'article
-                Article.findByIdAndUpdate(req.params.id,{ $pull: { likes: { _id: likeDeleted._id }}}, function(err, artUpdated){
+                Article.findByIdAndUpdate(req.params.id, { $pull: { likes: { _id: likeDeleted._id }}}, function(err, artUpdated){
                     // On contrôle s'il y a une erreur
                     if(err) return res.status(500).json(err);
                     // On contrôle l'article mis a jour

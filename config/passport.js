@@ -19,22 +19,19 @@ var User = mongoose.model('User');
 passport.use('local-login', new LocalStrategy({
   usernameField: 'user[email]',
   passwordField: 'user[password]',
-  session: false,
   passReqToCallback: true
 },
 function(req, email, password, done) {
-  User.findOne({ email: email }).then(function(err, user) {
+  User.findOne({ email: email }, function(err, user) {
     // Si des erreurs existent, on les renvoie
     if(err) return done(err);
     // On contrôle l'existence de l'utilisateur
     if(!user) return done(null, false, { "email": "is invalid"});
-
     // On contrôle le mot de passe
     if (!user.validPassword(password)) return done(null, false, {"password" : "is invalid"});
-
     // On renvoie l'utilisateur trouvé
     return done(null, user);
-  });
+  })
 })
 );
 
@@ -42,27 +39,19 @@ function(req, email, password, done) {
 passport.use('local-register', new LocalStrategy({
   usernameField: 'user[email]',
   passwordField: 'user[password]',
-  passReqToCallback: true,  
+  passReqToCallback: true
 },
 function(req, email, password, done) {
-  User.findOne({ email: email }).then(function(err, user) {
+  User.findOne({ email: email }, function(err, user) {
     // Si des erreurs existent, on les renvoie
     if(err) return done(err);
     // On contrôle l'existence de l'utilisateur
     if(user) return done(null, false, { "email": "is already taken"});
     // On crée un nouvel utilisateur
-    var user = new User()
-    user.username = req.body.email;
-    user.email = req.body.email;
-    user.lastname = req.body.lastname;
-    user.firstname = req.body.firstname;
-    user.address = {
-      street: req.body.street,
-      zip: req.body.street,
-      city: req.body.city
-    };
-    // On met à jour le mot de passe
-    user.setPassword(req.body.password);
+    var user = new User(req.body.user);
+    // On met à jour le nom d'utilisateur et le mot de passe
+    user.username = req.body.user.email;
+    user.setPassword(req.body.user.password);
     // On sauve le nouvel utilisateur
     user.save(function(err, newUser) {
       // Si des erreurs existent, on les renvoie

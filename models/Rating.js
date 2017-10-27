@@ -14,11 +14,11 @@ var RatingSchema = new mongoose.Schema({
     body: String, 
     value: { type: Number, min:0, max:5, required: true},
     // References
-    rater:{ type: mongoose.SchemaType.ObjectId, ref: "User" },
-    rated : { type: mongoose.SchemaType.ObjectId, ref: "User" },
-    concern:{ type: mongoose.SchemaType.ObjectId, ref: "Task" },
-    comments:[{ type: mongoose.SchemaType.ObjectId, ref: "Comment" }],
-    likes:[{ type: mongoose.SchemaType.ObjectId, ref: "Like" }],
+    rater:{ type: mongoose.SchemaTypes.ObjectId, ref: "User" },
+    rated : { type: mongoose.SchemaTypes.ObjectId, ref: "User" },
+    concern:{ type: mongoose.SchemaTypes.ObjectId, ref: "Task" },
+    comments:[{ type: mongoose.SchemaTypes.ObjectId, ref: "Comment" }],
+    likes:[{ type: mongoose.SchemaTypes.ObjectId, ref: "Like" }],
     // Timestamps
     publishedAt: Date,    
 });

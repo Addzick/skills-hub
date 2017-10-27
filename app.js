@@ -18,6 +18,27 @@ var cors = require('cors');
 var passport = require('passport');
 var errorhandler = require('errorhandler');
 var mongoose = require('mongoose');
+var config = require('./config/index');
+
+// Récupération des modèles Mongoose utilisés par l'application
+require('./models/Article');
+require('./models/Category');
+require('./models/Comment');
+require('./models/Event');
+require('./models/Like');
+require('./models/Notification');
+require('./models/Proposition');
+require('./models/Rating');
+require('./models/Task');
+require('./models/Tender');
+require('./models/User');
+
+// Récuperation de la config passport
+require('./config/passport');
+
+// Récupération des controleurs
+require('./controllers/users');
+ require('./controllers/articles');
 
 // Sommes-nous en mode production ?
 var isProduction = process.env.NODE_ENV === 'production';
@@ -43,10 +64,7 @@ app.use(methodOverride());
 app.use(express.static(__dirname + '/public'));
 
 // Définition des paramètres d'une session
-app.use(session({ secret: 'skills-hub', cookie: { maxAge: 60000 }, resave: false, saveUninitialized: false  }));
-
-// Definition de flash pour la gestion des messages stockés dans la session.
-app.use(flash()); 
+app.use(session({ secret: config.secret, cookie: { maxAge: 60000 }, resave: false, saveUninitialized: false  })); 
 
 // Définition de la méthode de traitement des erreur
 if (!isProduction) {
@@ -54,18 +72,12 @@ if (!isProduction) {
 }
 
 // Connexion à la base de données
-if(isProduction){
-  mongoose.connect(process.env.MONGODB_URI);
-} else {
-  mongoose.connect('mongodb://localhost/skills-hub');
-  mongoose.set('debug', true);
-}
-
-// Récupération des modèles Mongoose utilisés par l'application
-require('./models/User');
-require('./models/Article');
-require('./models/Comment');
-require('./config/passport');
+mongoose.connect(config.dbUri,{ useMongoClient : true, user: config.dbUser, pass: config.pass }, function(err){
+  if(err) {
+    console.log(err);
+  }
+  console.log("Connection open on DB : " + config.dbUri);
+});
 
 // Définition des routes
 app.use(require('./routes'));

@@ -18,9 +18,9 @@ module.exports = {
     // ******************************//
     // REGISTER
     // ******************************//
-    register: function(req, res) {
+    register: function(req, res, next) {
         // On tente d'enregister l'utilisateur
-        passport.authenticate('local-register', {session: false}, function(err, user, info) {
+        passport.authenticate('local-register', { session: false }, function(err, user, info) {
             // Si une erreur a été rencontrée, on la renvoie
             if(err) { return res.status(500).json(err); }
             // Si aucun utilisateur n'existe, on renvoie une erreur
@@ -42,13 +42,13 @@ module.exports = {
                 token: user.generateJWT(),
                 user: user
             });
-        });
+        })(req, res, next);
     },
     
     // ******************************//
     // LOGIN
     // ******************************//
-    login: function(req, res) {
+    login: function(req, res, next) {
         // On tente d'authentifier l'utilisateur
         passport.authenticate('local-login', { session: false }, function(err, user, info) {
            // Si une erreur a été rencontrée, on la renvoie
@@ -72,7 +72,7 @@ module.exports = {
                token: user.generateJWT(),
                user: user
            });
-       });
+       })(req, res, next);
     },
 
     // ******************************//

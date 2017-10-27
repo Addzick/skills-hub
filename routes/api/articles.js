@@ -57,19 +57,19 @@ router.delete('/delete', auth.required, controller.delete);
 
 // POST : http://<url-site-web:port>/api/articles/:article/comments
 // Ajout un nouveau commentaire à l'article correspondant
-router.post('/comments/:id', auth.required, controller.comment);
+router.post('/comments', auth.required, controller.comment);
 
 // DELETE : http://<url-site-web:port>/api/articles/:article/comments
 // Supprime un commentaire de l'article correspondant
-router.delete('/comments/:id', auth.required, controller.uncomment);
+router.delete('/comments', auth.required, controller.uncomment);
 
 // POST : http://<url-site-web:port>/api/articles/:article/comments
 // Ajout un nouveau like à l'article correspondant
-router.post('/likes/:id', auth.required, controller.like);
+router.post('/likes', auth.required, controller.like);
 
 // DELETE : http://<url-site-web:port>/api/articles/:article/comments
 // Supprime un like de l'article correspondant
-router.delete('/likes/:id', auth.required, controller.unlike);
+router.delete('/likes', auth.required, controller.unlike);
 
 // Exportation du router
 module.exports = router;

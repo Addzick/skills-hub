@@ -11,7 +11,7 @@ var mongoose = require('mongoose');
 // Définition du schéma d'un commentaire
 var CommentSchema = new mongoose.Schema({
   body: String,
-  author: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  author: { type: mongoose.SchemaTypes.ObjectId, ref: 'User' },
 }, {timestamps: true});
 
 // Attribution du schéma au modèle de commentaire
