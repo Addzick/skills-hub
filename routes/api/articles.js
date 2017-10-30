@@ -29,15 +29,15 @@ router.get('/feed', auth.required, controller.getFeed);
 
 // GET : http://<url-site-web:port>/api/articles/tags/
 // Renvoie la liste complète des tags de tous les articles postés
-router.get('/tags', controller.getTags);
+router.get('/tags', auth.optional, controller.getTags);
 
 // GET : http://<url-site-web:port>/api/articles/comments/:id
 // Renvoie la liste complète des commentaires d'un article
-router.get('/comments/:id', controller.getComments);
+router.get('/comments/:id', auth.optional, controller.getComments);
 
 // GET : http://<url-site-web:port>/api/articles/comments/:id
 // Renvoie la liste complète des likes d'un articles
-router.get('/likes/:id', controller.getLikes);
+router.get('/likes/:id', auth.optional, controller.getLikes);
 
 // POST : http://<url-site-web:port>/api/articles/create
 // Crée un article

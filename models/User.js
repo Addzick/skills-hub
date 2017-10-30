@@ -16,8 +16,8 @@ var secret = require('../config').secret;
 
 // Définition du schéma d'un utilisateur
 var UserSchema = new mongoose.Schema({
-  username: {type: String, lowercase: true, unique: true, required: [true, "can't be blank"], match: [/\S+@\S+\.\S+/, 'is invalid'], index: true},
-  email: {type: String, lowercase: true, unique: true, required: [true, "can't be blank"], match: [/\S+@\S+\.\S+/, 'is invalid'], index: true},
+  username: {type: String, lowercase: true, unique: true, required: [true, "is required"], match: [/\S+@\S+\.\S+/, 'is invalid'], index: true},
+  email: {type: String, lowercase: true, unique: true, required: [true, "is required"], match: [/\S+@\S+\.\S+/, 'is invalid'], index: true},
   lastname: String,
   firstname: String,
   bio: String,
@@ -34,7 +34,25 @@ var UserSchema = new mongoose.Schema({
   notes: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'Rating' }],
   hash: String,
   salt: String
-}, {timestamps: true});
+}, {
+  timestamps: true,
+  toObject: {
+    transform: function(doc, ret){
+      delete ret.username;
+      delete ret.hash;
+      delete ret.salt;
+      delete ret.__v;
+    }
+  },
+  toJSON: {
+    transform: function(doc, ret){
+      delete ret.username;
+      delete ret.hash;
+      delete ret.salt;
+      delete ret.__v;
+    }
+  }
+});
 
 // Définition du plugin utilisé pour la validation des champs uniques
 UserSchema.plugin(uniqueValidator, { message: 'is already taken.' });

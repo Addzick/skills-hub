@@ -20,35 +20,9 @@ var Event = mongoose.model('Event');
 module.exports = {
     
     // ******************************//
-    // GETBYID
-    // ******************************//
-    getById: function(req, res, next) {
-        Article
-        .findById(req.params.id)
-        .populate('author')
-        .populate('categories')
-        .populate({
-            path: 'comments',
-            options: {
-                limit: 20,
-                sort: {
-                    createdAt: 'desc'
-                }
-            }
-        })
-        .exec(function (err, article) {
-            // On contrôle s'il y a une erreur
-            if(err) return res.status(500).json(err);
-            // On contrôle l'article trouvé
-            if (!article) { return res.sendStatus(404); }
-            // On renvoie l'article
-            return res.status(200).json(article);
-        });
-    },
-    // ******************************//
     // GETALL
     // ******************************//
-    getAll: function(req, res) {
+    getAll: function(req, res, next) {
         var query = {};
         var opts = {
             skip: 0,
@@ -61,18 +35,9 @@ module.exports = {
             query.title = { "$regex" : '.*' + req.query.title + '.*' };
         }
         
-        // A-t-on un auteur ?
-        if(typeof req.query.author !== 'undefined') {
-            User.findOne({ username: req.query.author }).then(function(user) {
-                query.author = author._id;
-            });
-        }
-        
         // A-t-on un categorie ?
         if(typeof req.query.category !== 'undefined') {
-            Category.findOne({ title: req.query.category }).then(function(category){
-                query.categories = {"$in" : [category._id] };
-            });
+            query.categories = {"$in" : [req.query.category] };
         }
       
         // A-t-on un tag ?  
@@ -94,40 +59,33 @@ module.exports = {
         if(typeof req.query.sort !== undefined) {
             opts.sort = req.query.sort;
         }
-        
-        // On execute la requete d'abord, puis 
-        Article.count(query).exec(function(err, count){
-            // On contrôle s'il y a une erreur
-            if(err) { return res.status(500).json(err); }
-            // On contrôle le résultat du comptage
-            if(!count) { return res.status(500).json({ message: "An error occured while counting articles."}); }
-            // On récupère les articles paginés
+
+        // On renvoie le résultat après execution des requêtes
+        return Promise.all([
             Article
             .find(query,options)
             .populate('author')
             .populate('categories')
-            .exec(function(err, articles){
-                // On contrôle s'il y a une erreur
-                if(err) { return res.status(500).json(err); }
-                // On renvoie le résultat
-                return res.status(200).json({
-                    articles: articles,
-                    count: count,
-                    skip: opts.skip,
-                    limit: opts.limit,
-                    sort: opts.sort
-                });
+            .exec(),
+            Article.count(query).exec(),            
+        ]).then(function(results){
+            var articles = results[0];
+            var count = results[1];            
+            return res.status(200).json({
+                articles: articles,
+                count: count,
+                skip: opts.skip,
+                limit: opts.limit,
+                sort: opts.sort
             });
-        });
+        }).catch(next);
     },
     
     // ******************************//
     // GETFEED
     // ******************************//
-    getFeed: function(req, res) {
-        User.findById(req.payload.id, function(err, user) {
-            // On contrôle s'il y a une erreur
-            if(err) { return res.status(500).json(err); }
+    getFeed: function(req, res, next) {
+        User.findById(req.payload.id).then(function(user) {
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }            
             // On prépare la requête
@@ -143,23 +101,14 @@ module.exports = {
             // A-t-on un titre ?
             if(typeof req.query.title !== 'undefined' ) {
                 query.title = { "$regex" : '.*' + req.query.title + '.*' };
-            }
-          
-            // A-t-on un auteur ?
-            if(typeof req.query.author !== 'undefined') {
-                User.findOne({ username: req.query.author }).then(function(user) {
-                    query.author = author._id;
-                });
-            }
+            }          
           
             // A-t-on un categorie ?
             if(typeof req.query.category !== 'undefined') {
-                Category.findOne({ title: req.query.category }).then(function(category) {
-                    query.categories = {"$in" : [category._id] };
-                });
+                query.categories = {"$in" : [req.query.category] };
             }
-            
-            // A-t-on un tag ?
+        
+            // A-t-on un tag ?  
             if(typeof req.query.tag !== 'undefined' ) {
                 query.tags = {"$in" : [req.query.tag] };
             }
@@ -179,52 +128,69 @@ module.exports = {
                 opts.sort = req.query.sort;
             }
            
-            // On execute la requete d'abord
-            Article.count(query).exec(function(err, count) {
-                // On contrôle s'il y a une erreur
-                if(err) { return res.status(500).json(err); }
-                // On contrôle le résultat du comptage
-                if(!count) { return res.status(500).json({ message: "An error occured while counting articles."}); }
-                // On récupère les articles paginés
+            // On renvoie le résultat après execution des requêtes
+            return Promise.all([
                 Article
                 .find(query,options)
                 .populate('author')
                 .populate('categories')
-                .exec(function(err, articles) {
-                    // On contrôle s'il y a une erreur
-                    if(err) { return res.status(500).json(err); }
-                    // On renvoie le résultat
-                    return res.status(200).json({
-                        articles: articles,
-                        count: count,
-                        skip: opts.skip,
-                        limit: opts.limit,
-                        sort: opts.sort
-                    });
+                .exec(),
+                Article.count(query).exec(),            
+            ]).then(function(results){
+                var articles = results[0];
+                var count = results[1];            
+                return res.status(200).json({
+                    articles: articles,
+                    count: count,
+                    skip: opts.skip,
+                    limit: opts.limit,
+                    sort: opts.sort
                 });
             });
-        });
+        }).catch(next);
     },
 
     // ******************************//
     // GETTAGS
     // ******************************//
-    getTags: function(req, res) {
+    getTags: function(req, res, next) {
         Article
         .find({})
         .distinct('tags')
-        .exec(function(err, tags) {
-            // On contrôle s'il y a une erreur
-            if(err) return res.status(500).json(err);
+        .exec().then(function(tags) {
             // On renvoie la liste des tags
             return res.status(200).json(tags);
-        });
+        }).catch(next);
+    },
+
+    // ******************************//
+    // GETBYID
+    // ******************************//
+    getById: function(req, res, next) {
+        Article
+        .findById(req.params.id)
+        .populate('author')
+        .populate('categories')
+        .populate({
+            path: 'comments',
+            options: {
+                limit: 20,
+                sort: {
+                    createdAt: 'desc'
+                }
+            }
+        }).exec().then(function (article) {
+            // On contrôle l'article trouvé
+            if (!article) { return res.sendStatus(404); }
+            // On renvoie un statut OK avec l'article
+            return res.status(200).json({ article: article });
+        }).catch(next);
     },
 
     // ******************************//
     // GETCOMMENTS
     // ******************************//
-    getComments: function(req, res) {        
+    getComments: function(req, res, next) {
         // On initialise les options
         var opts = {
             skip: 0,
@@ -251,20 +217,18 @@ module.exports = {
             path: 'comments',
             options: opts
         })
-        .exec(function (err, article) {
-            // On contrôle s'il y a une erreur
-            if(err) return res.status(500).json(err);
+        .exec().then(function (article) {
             // On contrôle l'article trouvé
             if (!article) { return res.sendStatus(404); }
-            // On renvoie l'article
-            return res.status(200).json(article);
-        });
+            // On renvoie un statut OK avec l'article
+            return res.status(200).json({ article: article });
+        }).catch(next);
     },
 
     // ******************************//
     // GETLIKES
     // ******************************//
-    getLikes: function(req, res) {
+    getLikes: function(req, res, next) {
         
         // A-t-on une limite ?
         if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
@@ -285,194 +249,221 @@ module.exports = {
             path: 'likes',
             options: { sort: { createdAt: 'desc' }}
         })
-        .exec(function (err, article) {
-            // On contrôle s'il y a une erreur
-            if(err) return res.status(500).json(err);
+        .exec().then(function (article) {
             // On contrôle l'article trouvé
             if (!article) { return res.sendStatus(404); }
-            // On renvoie l'article
-            return res.status(200).json(article);
-        });
+            // On renvoie un statut OK avec l'article
+            return res.status(200).json({ article: article });
+        }).catch(next);
     },
 
     // ******************************//
     // CREATE
     // ******************************//
-    create: function(req, res) {
+    create: function(req, res, next) {
         // On recherche l'utilisateur authentifié
-        User.findById(req.payload.id, function(err, user) {
-            // On contrôle s'il y a une erreur
-            if(err) return res.status(500).json(err);            
+        User.findById(req.payload.id).then(function(user) {
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }          
             // On crée l'article
-            var article = new Article(req.body.article);          
+            var article = new Article(req.body);
             // On définit l'auteur
-            article.author = user;          
+            article.author = user;
             // On sauve l'article
-            return article.save(function(err, article) {
-                // On contrôle s'il y a une erreur
-                if(err) return res.status(500).json(err);
-                // On contrôle l'article crée
-                if(!article) return res.status(500).json({message: "An error occured while creating an article."});
-                // On renvoie l'article crée
-                return res.status(200).json(article);
+            return article.save().then(function() {
+                 // On crée un evenement
+                 var event = new Event();
+                 event.type = 4;
+                 event.priority = 0;
+                 event.user = user;
+                 event.source = article;
+                 event.save().then(function() {
+                     // On renvoie un statut OK avec l'article
+                     return res.status(200).json({ article: article });
+                 });
             });
-        });
-    },
-
-    // ******************************//
-    // PUBLISH
-    // ******************************//
-    publish: function(req, res) {
-        // On recherche l'utilisateur authentifié
-        User.findById(req.payload.id,function(err, user) {
-            // On contrôle s'il y a une erreur
-            if(err) return res.status(500).json(err);            
-            // Si aucun utilisateur trouvé, on renvoie un statut 401
-            if (!user) { return res.sendStatus(401); }
-            // On récupére l'article à modifier
-            var article = req.body.article;
-            // On contrôle que l'utilisateur soit bien l'auteur
-            if(article.author.toString() !== user._id.toString()) { return res.sendStatus(403); }
-            // On recherche l'article
-            Article.findByIdAndUpdate(article._id, { $set: { publishedAt: new Date() }}, function(err, artUpdated) {
-                // On contrôle s'il y a une erreur
-                if(err) return res.status(500).json(err);  
-                // On contrôle l'article trouvé
-                if(!article) { return res.sendStatus(404); }
-                // On crée un evenement
-                Event.create({
-                    type: 2,
-                    priority: 2,
-                    user: user._id,
-                    source: {
-                        kind: "article",
-                        item: artUpdated._id
-                    }
-                },
-                function(err, event) {
-                    // On contrôle s'il y a une erreur
-                    if(err) return res.status(500).json(err);
-                    // On contrôle l'evenement crée
-                    if(!event) return res.status(500).json({ messge: "An error occured while creating an article publishing event." });
-                    // On renvoie un statut OK
-                    return res.status(200).json(artUpdated);
-                });
-            })
-        });
+        }).catch(next);
     },
 
     // ******************************//
     // EDIT
     // ******************************//
-    edit: function(req, res) {
+    edit: function(req, res, next) {
         // On recherche l'utilisateur authentifié
-        User.findById(req.payload.id, function(err, user) {
-            // On contrôle s'il y a une erreur
-            if(err) return res.status(500).json(err);
+        User.findById(req.payload.id).then(function(user) {
+            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }
-            // On récupére l'article à modifier
-            var article = req.body.article;
-            // On contrôle que l'utilisateur soit bien l'auteur
-            if(article.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
-            // On crée l'article
-            Article.findByIdAndUpdate(article._id, article, function(err, artUpdated) {
-                // On contrôle s'il y a une erreur
-                if(err) return res.status(500).json(err);
-                // On contrôle l'article trouvé
-                if(!article) { return res.sendStatus(404); }
-                // On renvoie l'article mis à jour
-                return res.status(200).json(artUpdated);
-            })
-        })
+
+            // On recherche l'article à modifier
+            Article.findOne({ slug: req.body.slug }).then(function(article){
+            
+                // On contrôle si un article existe
+                if(!article) {return res.sendStatus(404); }
+            
+                // On contrôle que l'utilisateur soit bien l'auteur
+                if(article.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
+            
+                // On ne modifie que les champs modifiés
+                if(typeof req.body.title !== 'undefined') {
+                    article.title = req.body.title;
+                }
+                if(typeof req.body.description !== 'undefined') {
+                    article.description = req.body.description;
+                }
+                if(typeof req.body.body !== 'undefined') {
+                    article.body = req.body.body;
+                }
+                if(typeof req.body.tags !== 'undefined') {
+                    article.body = req.body.body;
+                }
+                if(typeof req.body.medias !== 'undefined') {
+                    article.medias = req.body.medias;
+                }
+                if(typeof req.body.categories !== 'undefined') {
+                    article.categories = req.body.categories;
+                }
+
+                 // On sauve l'article
+                 return article.save().then(function() {
+                     // On crée un evenement
+                     var event = new Event();
+                     event.type = 5;
+                     event.priority = 0;
+                     event.user = user;
+                     event.source = article;
+                     event.save().then(function() {
+                         // On renvoie un statut OK avec l'article
+                         return res.status(200).json({ article: article });
+                        });
+                    });
+                });
+        }).catch(next);
+    },
+
+    // ******************************//
+    // PUBLISH
+    // ******************************//
+    publish: function(req, res, next) {
+        // On recherche l'utilisateur authentifié
+        User.findById(req.payload.id).then(function(user) {
+            
+            // Si aucun utilisateur trouvé, on renvoie un statut 401
+            if (!user) { return res.sendStatus(401); }
+
+            // On recherche l'article à modifier
+            Article.findOne({ slug: req.body.slug }).then(function(article){
+            
+                // On contrôle si un article existe
+                if(!article) {return res.sendStatus(404); }
+            
+                // On contrôle que l'utilisateur soit bien l'auteur
+                if(article.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
+            
+                // On met à jour la date de publication
+                article.publishedAt = Date.now;
+
+                 // On sauve l'article
+                 return article.save().then(function() {
+                     // On crée un evenement
+                     var event = new Event();
+                     event.type = 6;
+                     event.priority = 0;
+                     event.user = user;
+                     event.source = article;
+                     event.save().then(function() {
+                         // On renvoie un statut OK avec l'article
+                         return res.status(200).json({ article: article });
+                        });
+                    });
+                });
+        }).catch(next);
     },
 
     // ******************************//
     // DELETE
     // ******************************//
-    delete:  function(req, res) {
+    delete:  function(req, res, next) {
         // On recherche l'utilisateur authentifié
-        User.findById(req.payload.id, function(err, user) {
-            // On contrôle s'il y a une erreur
-            if(err) return res.status(500).json(err);
+        User.findById(req.payload.id).then(function(user) {
+            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }
-            // On récupére l'article à modifier
-            var article = req.body.article;
-            // On contrôle que l'utilisateur soit bien l'auteur
-            if(article.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
-            // On supprime l'article
-            Article.findByIdAndRemove(article._id,function(err, artDeleted) {
-                // On contrôle s'il y a une erreur
-                if(err) return res.status(500).json(err);
-                // On renvoie un statut OK
-                return res.status(200).json(artDeleted);
-            });
-        });
+
+            // On recherche l'article à modifier
+            Article.findOne({ slug: req.body.slug }).then(function(article){
+            
+                // On contrôle si un article existe
+                if(!article) {return res.sendStatus(404); }
+            
+                // On contrôle que l'utilisateur soit bien l'auteur
+                if(article.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
+            
+                // On met à jour la date de publication
+                article.publishedAt = Date.now;
+
+                 // On sauve l'article
+                 return article.remove().then(function() {
+                     // On crée un evenement
+                     var event = new Event();
+                     event.type = 7;
+                     event.priority = 0;
+                     event.user = user;
+                     event.source = article;
+                     event.save().then(function() {
+                         // On renvoie un statut OK avec l'article
+                         return res.status(200).json({ article: article });
+                        });
+                    });
+                });
+        }).catch(next);
     },
 
     // ******************************//
     // COMMENT
     // ******************************//
-    comment: function(req, res) {
+    comment: function(req, res, next) {
         // On recherche l'utilisateur authentifié
-        User.findById(req.payload.id, function(err, user) {
-            // On contrôle s'il y a une erreur
-            if(err) return res.status(500).json(err);
+        User.findById(req.payload.id).then(function(user) {            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
-            if (!user) { return res.sendStatus(401); }        
-            // On crée le commentaire
-            var comment = new Comment(req.body.comment);
-            comment.author = user;        
-            // On sauve le commentaire
-            return Comment.create(comment, function(err, newComment) {
-                // On contrôle s'il y a une erreur
-                if(err) return res.status(500).json(err);
-                // On contrôle le commentaire crée
-                if(!newComment) return res.status(500).json({ message: "An error occured while creating a comment."});
-                // On ajoute le commentaire à l'article
-                Article.findByIdAndUpdate(req.params.id, { $push: {'comments': newComment }}, function(err, artUpdated) {
-                   // On contrôle s'il y a une erreur
-                   if(err) return res.status(500).json(err);
-                   // On contrôle l'article
-                   if(!artUpdated) return res.status(500).json({ message: "An error occured while adding a comment to an article."});
-                   // On crée un evenement
-                   Event.create({
-                       type: 17,
-                       priority: 1,
-                       user: user._id,
-                       source: {
-                           kind: "comment",
-                           item: newComment._id
-                        },
-                        target: {
-                            kind: "article",
-                            item: artUpdated._id
-                        },
-                    },
-                    function(err, event) {
-                        // On contrôle s'il y a une erreur
-                        if(err) return res.status(500).json(err);
-                        // On contrôle l'evenement crée
-                        if(!event) return res.status(500).json({ messge: "An error occured while creating an article comment event." });
-                        // On renvoie un statut OK
-                        return res.status(200).json(artUpdated);
+            if (!user) { return res.sendStatus(401); }    
+            // On recherche l'article à modifier
+            Article.findOne({ slug: req.body.article.slug }).then(function(article) {                
+                // On contrôle si un article existe
+                if(!article) {return res.sendStatus(404); }        
+                // On crée le commentaire
+                var comment = new Comment(req.body.comment);
+                // On définit l'auteur
+                comment.author = user;         
+                // On sauve le commentaire
+                return comment.save().then(function() {
+                    // On ajoute le commentaire à l'article
+                    article.comments.push(comment);
+                    // On sauve l'article
+                    return article.save().then(function() {
+                        // On crée un evenement
+                        var event = new Event();
+                        event.type = 8;
+                        event.priority = 0;
+                        event.user = user;
+                        event.source = comment;
+                        event.target = article;
+                        event.save().then(function() {
+                            // On renvoie un statut OK avec le commentaire
+                            return res.status(200).json({ comment: comment });
+                        });
                     });
                 });
             });
-        });
+        }).catch(next);
     },
 
     // ******************************//
     // UNCOMMENT
     // ******************************//
-    uncomment: function(req, res) {
+    uncomment: function(req, res, next) {
         // On recherche l'utilisateur authentifié
-        User.findById(req.payload.id, function(err, user) {
-            // On contrôle s'il y a une erreur
-            if(err) return res.status(500).json(err);
+        User.findById(req.payload.id).then(function(user) {
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }
             // On récupére le commentaire à supprimer
@@ -496,7 +487,7 @@ module.exports = {
                    return res.status(200).json(artUpdated);
                 });
             });
-        });
+        }).catch(next);
     },
 
     // ******************************//

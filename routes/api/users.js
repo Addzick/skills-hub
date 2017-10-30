@@ -26,6 +26,10 @@ router.post('/register', controller.register);
 // Renvoie le compte de l'utilisateur authentifié
 router.get('/account', auth.required, controller.getById);
 
+// PUT : http://<url-site-web:port>/api/account
+// Modifie le compte de l'utilisateur authentifié
+router.put('/account', auth.required, controller.edit);
+
 // POST : http://<url-site-web:port>/api/account/favorite/:category
 // Ajoute une nouvelle categorie favorie
 router.post('/favorite/:id', controller.favorite);
