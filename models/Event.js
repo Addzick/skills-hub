@@ -38,8 +38,8 @@ EventSchema.statics.newEvent = function(type, user, source, root){
   });
 }
 
-EventSchema.post('save',function(event){
-  this.db.model('Event').emit('new', event);
+EventSchema.post('save',function(next){
+  this.db.model('Event').emit('new', this);
 });
 
 // Attribution du schéma au modèle d'évènement
