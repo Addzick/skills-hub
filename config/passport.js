@@ -16,7 +16,7 @@ var LocalStrategy = require('passport-local').Strategy;
 var User = mongoose.model('User');
 
 // Définition de la méthode de login
-passport.use('local-login', new LocalStrategy( { usernameField: 'user[email]', passwordField: 'user[password]' }, function(req, email, password, done) {
+passport.use('local-login', new LocalStrategy( { usernameField: 'user[email]', passwordField: 'user[password]', passReqToCallback: true }, function(req, email, password, done) {
   User.findOne({ email: email }, function(err, user) {
     // Si des erreurs existent, on les renvoie
     if(err) return done(err);

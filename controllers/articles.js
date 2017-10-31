@@ -7,6 +7,7 @@
 
 // Importation des ressources externes
 var mongoose = require('mongoose');
+var enums = require('../config/enum');
 
 // Récupération des modeles Mongoose
 var Article = mongoose.model('Article');
@@ -19,6 +20,216 @@ var Event = mongoose.model('Event');
 // Définition des fonctions exportables
 module.exports = {
     
+    // ******************************//
+    // CREATE
+    // ******************************//
+    create: function(req, res, next) {
+        // On recherche l'utilisateur authentifié
+        User.findById(req.payload.id).then(function(user) {
+            // Si aucun utilisateur trouvé, on renvoie un statut 401
+            if (!user) { return res.sendStatus(401); }          
+            // On crée l'article
+            var article = new Article(req.body.article);            
+            // On définit l'auteur
+            article.author = user;
+            // On sauve l'article
+            return article.save().then(function() {
+                 // On crée un evenement
+                 Event.newEvent(enums.eventType[6], user, { kind: 'Article', item: article }, {}).then(function() {
+                     // On renvoie un statut OK avec l'article
+                     return res.status(200).json({ article: article });
+                 });
+            });
+        }).catch(next);
+    },
+
+    // ******************************//
+    // EDIT
+    // ******************************//
+    edit: function(req, res, next) {
+        // On recherche l'utilisateur authentifié
+        User.findById(req.payload.id).then(function(user) {            
+            // Si aucun utilisateur trouvé, on renvoie un statut 401
+            if (!user) { return res.sendStatus(401); }
+            // On récupére l'article préchargé
+            var article = req.article;
+            // On contrôle que l'utilisateur soit bien l'auteur
+            if(article.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }            
+            // On ne modifie que les champs modifiés
+            if(typeof req.body.article.title !== 'undefined') {  article.title = req.body.article.title; }
+            if(typeof req.body.article.description !== 'undefined') { article.description = req.body.article.description; }
+            if(typeof req.body.article.body !== 'undefined') { article.body = req.body.article.body; }
+            if(typeof req.body.article.tags !== 'undefined') { article.body = req.body.article.body; }
+            if(typeof req.body.article.medias !== 'undefined') { article.medias = req.body.article.medias; }
+            if(typeof req.body.article.categories !== 'undefined') { article.categories = req.body.article.categories; }            
+            // On sauve l'article
+            return article.save().then(function() {
+                // On crée un evenement
+                Event.newEvent(enums.eventType[7], user, { kind: 'article', item: article }, {}).then(function() {
+                    // On renvoie un statut OK avec l'article
+                    return res.status(200).json({ article: article });
+                });
+            });
+        }).catch(next);
+    },
+
+    // ******************************//
+    // PUBLISH
+    // ******************************//
+    publish: function(req, res, next) {
+        // On recherche l'utilisateur authentifié
+        User.findById(req.payload.id).then(function(user) {
+            // Si aucun utilisateur trouvé, on renvoie un statut 401
+            if (!user) { return res.sendStatus(401); }
+            // On récupére l'article préchargé
+            var article = req.article;
+            // On contrôle que l'utilisateur soit bien l'auteur
+            if(article.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
+            // On met à jour la date de publication
+            article.publishedAt = Date.now;
+            // On sauve l'article
+            return article.save().then(function() {
+                // On crée un evenement
+                Event.newEvent(enums.eventType[8], user, { kind: 'article', item: article }, {}).then(function() {
+                    // On renvoie un statut OK avec l'article
+                    return res.status(200).json({ article: article });
+                });
+            });
+        }).catch(next);
+    },
+
+    // ******************************//
+    // DELETE
+    // ******************************//
+    delete:  function(req, res, next) {
+        // On recherche l'utilisateur authentifié
+        User.findById(req.payload.id).then(function(user) {            
+            // Si aucun utilisateur trouvé, on renvoie un statut 401
+            if (!user) { return res.sendStatus(401); }
+            // On récupére l'article préchargé
+            var article = req.article;
+            // On contrôle que l'utilisateur soit bien l'auteur
+            if(article.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
+            // On met à jour la date de publication
+            article.publishedAt = Date.now;
+            // On sauve l'article
+            return article.remove().then(function() {
+                // On crée un evenement
+                Event.newEvent(enums.eventType[9], user, { kind: 'article', item: article }, {}).then(function() {
+                    // On renvoie un statut OK avec l'article
+                    return res.status(200).json({ article: article });
+                });
+            });
+        }).catch(next);
+    },
+
+    // ******************************//
+    // COMMENT
+    // ******************************//
+    comment:  function(req, res, next) {
+        // On recherche l'utilisateur authentifié
+        User.findById(req.payload.id).then(function(user) {
+            // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
+            if(!user) { return res.sendStatus(401); }
+            // On crée un commentaire
+            Comment.create({
+                body: req.body.comment,
+                author: user
+            }).then(function(comment) {
+                // On récupére l'article préchargé
+                var article = req.article;
+                // On ajoute le commentaire à l'article
+                article.comments.push(comment);
+                article.save().then(function() {
+                    // On crée un evenement
+                    Event.newEvent(enums.eventType[10], user, { kind: 'comment', item: comment }, { kind: 'article', item: article }).then(function() {
+                        // On renvoie un statut OK avec l'utilisateur et le token
+                        return res.status(200).json({ article: article });
+                    });
+                });
+            });
+        }).catch(next);
+    },
+
+    // ******************************//
+    // UNCOMMENT
+    // ******************************//
+    uncomment:  function(req, res, next) {
+        // On recherche l'utilisateur authentifié
+        User.findById(req.payload.id).then(function(user) {
+            // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
+            if(!user) { return res.sendStatus(401); }
+            // On récupére le commentaire et l'article préchargé
+            var comment = req.comment;
+            var article = req.article;
+            // On supprime le commentaire
+            comment.remove().then(function(){
+                // On supprime le lien avec l'article
+                article.comments.remove(comment);
+                // On sauve l'article
+                article.save().then(function() {
+                    // On crée un evenement
+                    Event.newEvent(enums.eventType[11], user, { kind: 'comment', item: comment }, { kind: 'article', item: article }).then(function() {
+                        // On renvoie un statut OK avec l'utilisateur et le token
+                        return res.status(200).json({ article: article });
+                    });
+                });
+            });
+        }).catch(next);
+    },
+
+    // ******************************//
+    // LIKE
+    // ******************************//
+    like:  function(req, res, next) {
+        // On recherche l'utilisateur authentifié
+        User.findById(req.payload.id).then(function(user) {
+            // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
+            if(!user) { return res.sendStatus(401); }
+            // On crée un commentaire
+            Like.create({ user: user }).then(function(like) {
+                // On récupére l'article préchargé
+                var article = req.article;
+                // On ajoute le commentaire à l'article
+                article.likes.push(like);
+                article.save().then(function() {
+                    // On crée un evenement
+                    Event.newEvent(enums.eventType[12], user, { kind: 'like', item: like }, { kind: 'article', item: article }).then(function() {
+                        // On renvoie un statut OK avec l'article
+                        return res.status(200).json({ article: article });
+                    });
+                });
+            });
+        }).catch(next);
+    },
+
+    // ******************************//
+    // UNCOMMENT
+    // ******************************//
+    unlike:  function(req, res, next) {
+        // On recherche l'utilisateur authentifié
+        User.findById(req.payload.id).then(function(user) {
+            // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
+            if(!user) { return res.sendStatus(401); }
+            // On récupére le commentaire et l'article préchargé
+            var like = req.like;
+            var article = req.article;
+            // On supprime le commentaire
+            like.remove().then(function(){
+                // On supprime le lien avec l'article
+                article.likes.remove(like);
+                // On sauve l'article
+                article.save().then(function() {
+                    // On crée un evenement
+                    Event.newEvent(enums.eventType[13], user, { kind: 'Like', item: like }, { kind: 'Article', item: article }).then(function() {
+                        // On renvoie un statut OK avec l'article
+                        return res.status(200).json({ article: article });
+                    });
+                });
+            });
+        }).catch(next);
+    },
+
     // ******************************//
     // GETALL
     // ******************************//
@@ -168,7 +379,7 @@ module.exports = {
     // ******************************//
     getById: function(req, res, next) {
         Article
-        .findById(req.params.id)
+        .findById(req.params.article)
         .populate('author')
         .populate('categories')
         .populate({
@@ -210,7 +421,7 @@ module.exports = {
 
         // On recherche l'article avec ses commentaires
         Article
-        .findById(req.params.id)
+        .findById(req.params.article)
         .populate('author')
         .populate('categories')
         .populate({
@@ -242,7 +453,7 @@ module.exports = {
 
         // On recherche l'article avec ses likes
         Article
-        .findById(req.params.id)
+        .findById(req.params.article)
         .populate('author')
         .populate('categories')
         .populate({
@@ -258,165 +469,54 @@ module.exports = {
     },
 
     // ******************************//
-    // CREATE
+    // PRELOAD ARTICLE
     // ******************************//
-    create: function(req, res, next) {
-        // On recherche l'utilisateur authentifié
-        User.findById(req.payload.id).then(function(user) {
-            // Si aucun utilisateur trouvé, on renvoie un statut 401
-            if (!user) { return res.sendStatus(401); }          
-            // On crée l'article
-            var article = new Article(req.body);
-            // On définit l'auteur
-            article.author = user;
-            // On sauve l'article
-            return article.save().then(function() {
-                 // On crée un evenement
-                 var event = new Event();
-                 event.type = 4;
-                 event.priority = 0;
-                 event.user = user;
-                 event.source = article;
-                 event.save().then(function() {
-                     // On renvoie un statut OK avec l'article
-                     return res.status(200).json({ article: article });
-                 });
-            });
-        }).catch(next);
+    preloadArticle: function(req, res, next) {
+        // On récupère le paramètre depuis la requête        
+        var id = mongoose.Types.ObjectId(req.params.article);
+        // On recherche l'article correspondant
+        Article.findById(id).populate('author').then(function(article){            
+            // Si aucun article trouvé, on renvoie une erreur 404
+            if(!article) { console.log('Article not found'); return res.sendStatus(404); }        
+            // On remplit la requête avec l'article trouvé
+            req.article = article;
+            // On continue l'execution
+            return next();
+          }).catch(next);
     },
 
     // ******************************//
-    // EDIT
+    // PRELOAD COMMENT
     // ******************************//
-    edit: function(req, res, next) {
-        // On recherche l'utilisateur authentifié
-        User.findById(req.payload.id).then(function(user) {
-            
-            // Si aucun utilisateur trouvé, on renvoie un statut 401
-            if (!user) { return res.sendStatus(401); }
-
-            // On recherche l'article à modifier
-            Article.findOne({ slug: req.body.slug }).then(function(article){
-            
-                // On contrôle si un article existe
-                if(!article) {return res.sendStatus(404); }
-            
-                // On contrôle que l'utilisateur soit bien l'auteur
-                if(article.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
-            
-                // On ne modifie que les champs modifiés
-                if(typeof req.body.title !== 'undefined') {
-                    article.title = req.body.title;
-                }
-                if(typeof req.body.description !== 'undefined') {
-                    article.description = req.body.description;
-                }
-                if(typeof req.body.body !== 'undefined') {
-                    article.body = req.body.body;
-                }
-                if(typeof req.body.tags !== 'undefined') {
-                    article.body = req.body.body;
-                }
-                if(typeof req.body.medias !== 'undefined') {
-                    article.medias = req.body.medias;
-                }
-                if(typeof req.body.categories !== 'undefined') {
-                    article.categories = req.body.categories;
-                }
-
-                 // On sauve l'article
-                 return article.save().then(function() {
-                     // On crée un evenement
-                     var event = new Event();
-                     event.type = 5;
-                     event.priority = 0;
-                     event.user = user;
-                     event.source = article;
-                     event.save().then(function() {
-                         // On renvoie un statut OK avec l'article
-                         return res.status(200).json({ article: article });
-                        });
-                    });
-                });
-        }).catch(next);
+    preloadComment: function(req, res, next) {
+        // On récupère le paramètre depuis la requête
+        var id = req.params.comment;
+        // On recherche le commentaire correspondant
+        Comment.findById(id).populate('author').then(function(comment){
+            // Si aucun commentaire trouvé, on renvoie une erreur 404
+            if(!comment) { return res.sendStatus(404); }        
+            // On remplit la requête avec le commentaire trouvé
+            req.comment = comment;
+            // On continue l'execution
+            return next();
+          }).catch(next);
     },
 
     // ******************************//
-    // PUBLISH
+    // PRELOAD LIKE
     // ******************************//
-    publish: function(req, res, next) {
-        // On recherche l'utilisateur authentifié
-        User.findById(req.payload.id).then(function(user) {
-            
-            // Si aucun utilisateur trouvé, on renvoie un statut 401
-            if (!user) { return res.sendStatus(401); }
-
-            // On recherche l'article à modifier
-            Article.findOne({ slug: req.body.slug }).then(function(article){
-            
-                // On contrôle si un article existe
-                if(!article) {return res.sendStatus(404); }
-            
-                // On contrôle que l'utilisateur soit bien l'auteur
-                if(article.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
-            
-                // On met à jour la date de publication
-                article.publishedAt = Date.now;
-
-                 // On sauve l'article
-                 return article.save().then(function() {
-                     // On crée un evenement
-                     var event = new Event();
-                     event.type = 6;
-                     event.priority = 0;
-                     event.user = user;
-                     event.source = article;
-                     event.save().then(function() {
-                         // On renvoie un statut OK avec l'article
-                         return res.status(200).json({ article: article });
-                        });
-                    });
-                });
-        }).catch(next);
-    },
-
-    // ******************************//
-    // DELETE
-    // ******************************//
-    delete:  function(req, res, next) {
-        // On recherche l'utilisateur authentifié
-        User.findById(req.payload.id).then(function(user) {
-            
-            // Si aucun utilisateur trouvé, on renvoie un statut 401
-            if (!user) { return res.sendStatus(401); }
-
-            // On recherche l'article à modifier
-            Article.findOne({ slug: req.body.slug }).then(function(article){
-            
-                // On contrôle si un article existe
-                if(!article) {return res.sendStatus(404); }
-            
-                // On contrôle que l'utilisateur soit bien l'auteur
-                if(article.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
-            
-                // On met à jour la date de publication
-                article.publishedAt = Date.now;
-
-                 // On sauve l'article
-                 return article.remove().then(function() {
-                     // On crée un evenement
-                     var event = new Event();
-                     event.type = 7;
-                     event.priority = 0;
-                     event.user = user;
-                     event.source = article;
-                     event.save().then(function() {
-                         // On renvoie un statut OK avec l'article
-                         return res.status(200).json({ article: article });
-                        });
-                    });
-                });
-        }).catch(next);
+    preloadLike: function(req, res, next) {
+        // On récupère le paramètre depuis la requête
+        var id = req.params.like;
+        // On recherche le like correspondant
+        Comment.findById(id).populate('user').then(function(like){
+            // Si aucun like trouvé, on renvoie une erreur 404
+            if(!like) { return res.sendStatus(404); }        
+            // On remplit la requête avec le like trouvé
+            req.like = like;
+            // On continue l'execution
+            return next();
+          }).catch(next);
     }
 };
 

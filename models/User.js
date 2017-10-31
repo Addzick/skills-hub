@@ -18,6 +18,7 @@ var secret = require('../config').secret;
 var UserSchema = new mongoose.Schema({
   username: {type: String, lowercase: true, unique: true, required: [true, "is required"], match: [/\S+@\S+\.\S+/, 'is invalid'], index: true},
   email: {type: String, lowercase: true, unique: true, required: [true, "is required"], match: [/\S+@\S+\.\S+/, 'is invalid'], index: true},
+  abo: { type: String, lowercase: true, required: true, default: 'bronze', enum: ['bronze', 'silver', 'gold', 'platine', 'diamond']},
   lastname: String,
   firstname: String,
   bio: String,

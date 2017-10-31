@@ -6,10 +6,10 @@
 */
 
 // Imporation des ressources externes
+var express = require('express');
 var http = require('http');
 var path = require('path');
 var methods = require('methods');
-var express = require('express');
 var logger = require('morgan');
 var methodOverride = require('method-override');
 var bodyParser = require('body-parser');
@@ -18,20 +18,22 @@ var cors = require('cors');
 var passport = require('passport');
 var errorhandler = require('errorhandler');
 var mongoose = require('mongoose');
+
+// Récupération de la configuration
 var config = require('./config/index');
 
 // Récupération des modèles Mongoose utilisés par l'application
-require('./models/Article');
-require('./models/Category');
-require('./models/Comment');
-require('./models/Event');
-require('./models/Like');
-require('./models/Notification');
-require('./models/Proposition');
-require('./models/Rating');
-require('./models/Task');
-require('./models/Tender');
-require('./models/User');
+var Article = require('./models/Article');
+var Category = require('./models/Category');
+var Comment = require('./models/Comment');
+var Event = require('./models/Event');
+var Like = require('./models/Like');
+var Notification = require('./models/Notification');
+var Proposition = require('./models/Proposition');
+var Rating = require('./models/Rating');
+var Task = require('./models/Task');
+var Tender = require('./models/Tender');
+var User = require('./models/User');
 
 // Récuperation de la config passport
 require('./config/passport');
@@ -45,6 +47,9 @@ var isProduction = process.env.NODE_ENV === 'production';
 
 // Création de l'objet global pour l'application Express
 var app = express();
+// Définition du serveur HTTP et de socket
+var server = http.createServer(app);
+var io = require('socket.io').listen(server);
 
 // Définition du cross-origin resource sharing (CORS). 
 // C'est un mécanisme de permettant d'accèder à des ressources protégées (ex : une police de caractère) depuis un autre domaine que celui de l'application
@@ -114,7 +119,24 @@ app.use(function(err, req, res, next) {
   }});
 });
 
+var connections = []
+
+io.sockets.on('connection', function(socket) {
+  // New client
+  console.log(`New connection from : ${socket.address}`);    
+  // new event
+  socket.on('new event', function(event) {
+    console.log(event);
+  });
+});
+
+// On met en place un broadcast sur chaque nouvel evenement
+Event.on('new', function(event){
+  console.log(event);
+  io.sockets.emit("new event", { "event" : event });
+});
+
 // Démarrage du serveur
-var server = app.listen( process.env.PORT || 3000, function(){
+server.listen( process.env.PORT || 3000, function(){
   console.log('Listening on port ' + server.address().port);
 });

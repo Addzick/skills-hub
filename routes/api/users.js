@@ -11,8 +11,11 @@ var router = require('express').Router();
 // Récupération de l'objet de traitement de l'authentification
 var auth = require('../auth');
 
-// Récupération du controller
-var controller = require('../../controllers/users');
+// Récupération des controllers
+var controller      = require('../../controllers/users');
+
+// On précharge la catégorie si elle est en paramètre
+router.param('category', controller.preloadCategory);
 
 // POST : http://<url-site-web:port>/api/login
 // Authentifie un utilisateur
@@ -32,11 +35,11 @@ router.put('/account', auth.required, controller.edit);
 
 // POST : http://<url-site-web:port>/api/account/favorite/:category
 // Ajoute une nouvelle categorie favorie
-router.post('/favorite/:id', controller.favorite);
+router.post('/account/:category', controller.favorite);
 
 // DELETE : http://<url-site-web:port>/api/account/favorite/:category
 // Supprime une categorie favorie
-router.delete('/favorite/:id', controller.unfavorite);
+router.delete('/account/:category', controller.unfavorite);
 
 // Exportation du routeur
 module.exports = router;

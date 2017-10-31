@@ -7,29 +7,14 @@
 
 // Importation des ressources externes
 var mongoose = require('mongoose');
+var enums = require('../config/enum');
 
 // Définition du schéma d'un évènement
 var EventSchema =  new mongoose.Schema({
-    type: { type: Number, required: true, enum: [
-      //-------------------------------//
-      // Gestion des utilisateurs
-      //-------------------------------//
-      0,  // Nouvel utilisateur
-      1,  // Connexion d'un utilisateur
-      2,  // Déconnexion d'un utilisateur
-      3,  // Edition d'un utilisateur
-      //-------------------------------//
-      // Gestion des articles
-      //-------------------------------//
-      4,  // Creation d'un article
-      5,  // Edition d'un article
-      6,  // Publication d'un article
-      7,  // Suppression d'un article      
-      
-    ] },
-    priority: { type: Number, required: true, min: 0, max: 2 },    
-    user: { type: mongoose.SchemaTypes.ObjectId, ref: "User" },
-    source: { kind : String, item: {type: mongoose.SchemaTypes.ObjectId, refPath: 'source.kind' } }    
+    type: { type: String, required: true, lowercase:true, enum:  enums.eventType },
+    user: { type: mongoose.SchemaTypes.ObjectId, ref: 'User' },
+    source: { kind : String, item: {type: mongoose.SchemaTypes.ObjectId, refPath: 'source.kind' } },
+    root: { kind : String, item: {type: mongoose.SchemaTypes.ObjectId, refPath: 'root.kind' } },
 }, {
   timestamps: true,
   toObject: {
@@ -39,9 +24,22 @@ var EventSchema =  new mongoose.Schema({
   },
   toJSON: {
     transform: function(doc, ret){
-      delete ret.__v;      
+      delete ret.__v;
     }
   }
+});
+
+EventSchema.statics.newEvent = function(type, user, source, root){
+  return this.create({
+    type: type,
+    user: user,
+    source: source,
+    root: root
+  });
+}
+
+EventSchema.post('save',function(event){
+  this.db.model('Event').emit('new', event);
 });
 
 // Attribution du schéma au modèle d'évènement

@@ -12,8 +12,19 @@ var mongoose = require('mongoose');
 var CommentSchema = new mongoose.Schema({
   body: String,
   author: { type: mongoose.SchemaTypes.ObjectId, ref: 'User' },
-  target: { kind : String, item: {type: mongoose.SchemaTypes.ObjectId, refPath: 'target.kind' } },
-}, {timestamps: true});
+}, {
+  timestamps: true,
+  toObject: {
+    transform: function(doc, ret){
+      delete ret.__v;
+    }
+  },
+  toJSON: {
+    transform: function(doc, ret){
+      delete ret.__v;
+    }
+  }
+});
 
 // Attribution du schéma au modèle de commentaire
 mongoose.model('Comment', CommentSchema);

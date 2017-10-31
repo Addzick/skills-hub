@@ -6,12 +6,15 @@
 */
 
 // Importation des ressources externes
-var mongoose = require('mongoose');
-var passport = require('passport');
+var mongoose    = require('mongoose');
+var passport    = require('passport');
+var enums       = require('../config/enum');
 
 // Récupération du modèle Mongoose correspondant à un utilisateur
 var User      = mongoose.model('User');
+var Category  = mongoose.model('Category');
 var Event     = mongoose.model('Event');
+
 
 // Définition des fonctions exportables
 module.exports = {
@@ -19,31 +22,25 @@ module.exports = {
     // ******************************//
     // REGISTER
     // ******************************//
-    register: function(req, res, next) {        
+    register: function(req, res, next) {
         // On contrôle la présence d'un email
-        if(!req.body.email) {
+        if(!req.body.user.email) {
             return res.status(422).json({ errors: { "email": "is required" }});
         }
         // On contrôle la présence du mot de passe
-        if(!req.body.password) {
+        if(!req.body.user.password) {
             return res.status(422).json({ errors: { "password": "is required" }});
         }
-
         // On crée un nouvel utilisateur
-        var user = new User(req.body);
+        var user = new User(req.body.user);
         // On met à jour le nom d'utilisateur et le mot de passe
-        user.username = req.body.email;
-        user.setPassword(req.body.password);
+        user.username = req.body.user.email;
+        user.setPassword(req.body.user.password);
         
         // On sauve le nouvel utilisateur
         user.save().then(function() {
             // On crée un evenement
-            var event = new Event();
-            event.type = 0;
-            event.priority = 0;
-            event.user = user;
-            event.source = user;
-            event.save().then(function() {
+            Event.newEvent(enums.eventType[0], user, { kind: 'User', item: user }, {}).then(function() {
                 // On renvoie un statut OK avec l'utilisateur et l'evenement correspondant
                 return res.status(200).json({ 
                     token: user.generateJWT(),
@@ -73,12 +70,7 @@ module.exports = {
            // Si aucun utilisateur n'existe, on renvoie une erreur
            if(!user) { return res.status(500).json(info); }
            // On crée un evenement
-           var event = new Event();
-           event.type = 1;
-           event.priority = 0;
-           event.user = user;
-           event.source = user;
-           event.save().then(function() {
+           Event.newEvent(enums.eventType[1], user, { kind: 'User', item: user }, {}).then(function() {
                // On renvoie un statut OK avec l'utilisateur et le token
                return res.status(200).json({ 
                    token: user.generateJWT(),
@@ -97,12 +89,7 @@ module.exports = {
             // Aucun utilisateur, on renvoie un statut 401
             if(!user){ return res.sendStatus(401); }
             // On crée un evenement
-            var event = new Event();
-            event.type = 2;
-            event.priority = 0;
-            event.user = user;
-            event.source = user;
-            event.save().then(function() {
+            Event.newEvent(enums.eventType[2], user, { kind: 'User', item: user }, {}).then(function() {
                 // On renvoie un statut OK avec l'utilisateur et le token
                 return res.sendStatus(202);
             });
@@ -118,38 +105,33 @@ module.exports = {
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }
             // On modifie uniquement les infos modifiées
-            if(typeof req.body.email !== 'undefined') {
-                user.username   = req.body.email;
-                user.email      = req.body.email;
+            if(typeof req.body.user.email !== 'undefined') {
+                user.username   = req.body.user.email;
+                user.email      = req.body.user.email;
             }
-            if(typeof req.body.password !== 'undefined') {
-                user.setPassword(req.body.password);
+            if(typeof req.body.user.password !== 'undefined') {
+                user.setPassword(req.body.user.password);
             }
-            if(typeof req.body.firstname !== 'undefined') {
-                user.firstname = req.body.firstname;
+            if(typeof req.body.user.firstname !== 'undefined') {
+                user.firstname = req.body.user.firstname;
             }
-            if(typeof req.body.lastname !== 'undefined') {
-                user.lastname = req.body.lastname;
+            if(typeof req.body.user.lastname !== 'undefined') {
+                user.lastname = req.body.user.lastname;
             }
-            if(typeof req.body.bio !== 'undefined') {
-                user.bio = req.body.bio;
+            if(typeof req.body.user.bio !== 'undefined') {
+                user.bio = req.body.user.bio;
             }
-            if(typeof req.body.image !== 'undefined'){
-                user.image = req.body.image;
+            if(typeof req.body.user.image !== 'undefined'){
+                user.image = req.body.user.image;
             }
-            if(typeof req.body.address !== 'undefined') {
-                user.address = req.body.address;
+            if(typeof req.body.user.address !== 'undefined') {
+                user.address = req.body.user.address;
             }
             
             // On sauve le nouvel utilisateur
             user.save().then(function() {
                 // On crée un evenement
-                var event = new Event();
-                event.type = 3;
-                event.priority = 0;
-                event.user = user;
-                event.source = user;
-                event.save().then(function() {
+                Event.newEvent(enums.eventType[3], user, { kind: 'User', item: user }, {}).then(function() {
                     // On renvoie un statut OK avec l'utilisateur et le token
                     return res.status(200).json({ 
                         token: user.generateJWT(),
@@ -160,6 +142,62 @@ module.exports = {
         }).catch(next);
     },
 
+    // ******************************//
+    // FAVORITE
+    // ******************************//
+    favorite:  function(req, res, next) {
+        // On recherche l'utilisateur authentifié
+        User.findById(req.payload.id).then(function(user) {
+            // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
+            if(!user) { return res.sendStatus(401); }
+            // On récupére la categorie
+            var category = req.category;
+            // L'utilisateur a-t-il déja cette catégorie en favori ?
+            if(user.favorites.indexOf(category._id) !== -1) { 
+                // On renvoie un statut OK mais sans rien changé
+                return res.status(202).json({ user: user }); 
+            }
+            // On ajoute la categorie aux favoris de l'utilisateur
+            user.favorites.push(category);            
+            // On sauve
+            return user.save().then(function() {
+                // On crée un evenement
+                Event.newEvent(enums.eventType[4], user, { kind: 'Category', item: category }, { kind: 'User', item: user }).then(function() {
+                    // On renvoie un statut OK avec l'utilisateur
+                    return res.status(200).json({ user: user });
+                });
+            });
+        }).catch(next);
+    },
+
+    // ******************************//
+    // UNFAVORITE
+    // ******************************//
+    unfavorite: function(req, res, next) {
+        // On recherche l'utilisateur authentifié
+        User.findById(req.payload.id).then(function(user) {
+            // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
+            if(!user){ return res.sendStatus(401); }
+            // On récupére la categorie
+            var category = req.category;
+            // L'utilisateur a-t-il déja cette catégorie en favori ?
+            if(user.favorites.indexOf(category._id) === -1) { 
+                // On renvoie un statut OK mais sans rien changé
+                return res.status(202).json({ user: user }); 
+            }
+            // On supprime la catégorie des favoris de l'utilisateur
+            user.favorites.remove(category);
+            // On sauve
+            return user.save().then(function() {
+                // On crée un evenement
+                Event.newEvent(enums.eventType[5], user, { kind: 'Category', item: category }, { kind: 'User', item: user }).then(function() {
+                    // On renvoie un statut OK avec l'utilisateur et le token
+                    return res.status(200).json({ user: user });
+                });
+            });
+        }).catch(next);
+    },
+    
     // ******************************//
     // GETBYID
     // ******************************//
@@ -189,59 +227,22 @@ module.exports = {
             // On renvoie un statut OK et l'utilisateur correctement rempli
             return res.status(200).json(user);
         }).catch(next);
-    },    
-
-    // ******************************//
-    // FAVORITE
-    // ******************************//
-    favorite:  function(req, res, next) {
-        // On recherche l'utilisateur authentifié
-        User.findById(req.payload.id).then(function(user) {
-            // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
-            if(!user) { return res.sendStatus(401); }
-            // On l'ajoute aux favoris de l'utilisateur
-            var id = req.params.id;
-            if(user.favorites.indexOf(id) === -1) { this.favorites.push(id); }
-            // On sauve
-            return user.save().then(function() {
-                // On crée un evenement
-                var event = new Event();
-                event.type = 3;
-                event.priority = 0;
-                event.user = user;
-                event.source = user;
-                event.save().then(function() {
-                    // On renvoie un statut OK avec l'utilisateur et le token
-                    return res.status(200).json({ user: user });
-                });
-            });
-        }).catch(next);
     },
 
     // ******************************//
-    // UNFAVORITE
+    // PRELOAD CATEGORY
     // ******************************//
-    unfavorite: function(req, res, next) {
-        // On recherche l'utilisateur authentifié
-        User.findById(req.payload.id).then(function(user) {
-            // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
-            if(!user){ return res.sendStatus(401); }
-            // On l'ajoute aux favoris de l'utilisateur
-            var id = req.params.id;
-            user.favorites.remove(id);
-            // On sauve
-            return user.save().then(function() {
-                // On crée un evenement
-                var event = new Event();
-                event.type = 3;
-                event.priority = 0;
-                event.user = user;
-                event.source = user;
-                event.save().then(function() {
-                    // On renvoie un statut OK avec l'utilisateur et le token
-                    return res.status(200).json({ user: user });
-                });
-            });
-        }).catch(next);
+    preloadCategory: function(req, res, next) {
+        // On récupère le paramètre depuis la requête
+        var id = req.params.category;
+        // On recherche la categorie correspondante
+        Category.findById(id).then(function(category){
+            // Si aucune catégorie trouvée, on renvoie une erreur 404
+            if(!category) { return res.sendStatus(404); }        
+            // On remplit la requête avec la catégorie trouvée
+            req.category = category;
+            // On continue l'execution
+            return next();
+          }).catch(next);
     }
 };
