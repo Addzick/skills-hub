@@ -85,8 +85,10 @@ UserSchema.methods.generateJWT = function() {
 
   // On signe le web token avec la phrase secrète avant de le renvoyer
   return jwt.sign({
-    id: this._id,
-    username: this.username,
+    user: { 
+      id: this._id,
+      username: this.username
+    },
     exp: parseInt(exp.getTime() / 1000),
   }, secret);
 };

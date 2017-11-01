@@ -42,10 +42,7 @@ module.exports = {
             // On crée un evenement
             Event.newEvent(enums.eventType[0], user, { kind: 'User', item: user }, {}).then(function() {
                 // On renvoie un statut OK avec l'utilisateur et l'evenement correspondant
-                return res.status(200).json({ 
-                    token: user.generateJWT(),
-                    user: user
-                });
+                return res.status(200).json({ token: user.generateJWT() });
             });
         }).catch(next);
     },
@@ -66,16 +63,13 @@ module.exports = {
         // On tente d'authentifier l'utilisateur
         passport.authenticate('local-login', { session: false }, function(err, user, info) {
            // Si une erreur a été rencontrée, on la renvoie
-           if(err) { return res.status(500).json(err); }
+           if(err) { return res.status(422).json(err); }
            // Si aucun utilisateur n'existe, on renvoie une erreur
-           if(!user) { return res.status(500).json(info); }
+           if(!user) { return res.status(422).json(info); }
            // On crée un evenement
            Event.newEvent(enums.eventType[1], user, { kind: 'User', item: user }, {}).then(function() {
                // On renvoie un statut OK avec l'utilisateur et le token
-               return res.status(200).json({ 
-                   token: user.generateJWT(),
-                   user: user,
-               });
+               return res.status(200).json({ token: user.generateJWT() });
            }).catch(next);
        })(req, res, next);
     },
