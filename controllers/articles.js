@@ -86,7 +86,7 @@ module.exports = {
             // On contrôle que l'utilisateur soit bien l'auteur
             if(article.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
             // On met à jour la date de publication
-            article.publishedAt = Date.now;
+            article.publishedAt = Date.now();
             // On sauve l'article
             return article.save().then(function() {
                 // On crée un evenement
@@ -110,10 +110,8 @@ module.exports = {
             var article = req.article;
             // On contrôle que l'utilisateur soit bien l'auteur
             if(article.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
-            // On met à jour la date de publication
-            article.publishedAt = Date.now;
             // On sauve l'article
-            return article.remove().then(function() {
+            return Article.findByIdAndRemove(article._id).then(function() {
                 // On crée un evenement
                 Event.newEvent(enums.eventType[9], user, { kind: 'article', item: article }, {}).then(function() {
                     // On renvoie un statut OK avec l'article
@@ -131,11 +129,8 @@ module.exports = {
         User.findById(req.payload.id).then(function(user) {
             // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
             if(!user) { return res.sendStatus(401); }
-            // On crée un commentaire
-            Comment.create({
-                body: req.body.comment,
-                author: user
-            }).then(function(comment) {
+            // On crée un commentaire            
+            return Comment.create({ body: req.body.comment.body, author: user }).then(function(comment) {
                 // On récupére l'article préchargé
                 var article = req.article;
                 // On ajoute le commentaire à l'article
@@ -163,7 +158,7 @@ module.exports = {
             var comment = req.comment;
             var article = req.article;
             // On supprime le commentaire
-            comment.remove().then(function(){
+            return Comment.findByIdAndRemove(comment._id).then(function(){
                 // On supprime le lien avec l'article
                 article.comments.remove(comment);
                 // On sauve l'article
@@ -187,7 +182,7 @@ module.exports = {
             // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
             if(!user) { return res.sendStatus(401); }
             // On crée un commentaire
-            Like.create({ user: user }).then(function(like) {
+            return Like.create({ user: user }).then(function(like) {
                 // On récupére l'article préchargé
                 var article = req.article;
                 // On ajoute le commentaire à l'article
@@ -215,7 +210,7 @@ module.exports = {
             var like = req.like;
             var article = req.article;
             // On supprime le commentaire
-            like.remove().then(function(){
+            return Like.findByIdAndRemove(like._id).then(function(){
                 // On supprime le lien avec l'article
                 article.likes.remove(like);
                 // On sauve l'article
@@ -509,7 +504,7 @@ module.exports = {
         // On récupère le paramètre depuis la requête
         var id = req.params.like;
         // On recherche le like correspondant
-        Comment.findById(id).populate('user').then(function(like){
+        Like.findById(id).populate('user').then(function(like){
             // Si aucun like trouvé, on renvoie une erreur 404
             if(!like) { return res.sendStatus(404); }        
             // On remplit la requête avec le like trouvé
