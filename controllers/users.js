@@ -27,12 +27,14 @@ module.exports = {
         if(!req.body.user.email) {
             return res.status(422).json({ errors: { "email": "is required" }});
         }
+        
         // On contrôle la présence du mot de passe
         if(!req.body.user.password) {
             return res.status(422).json({ errors: { "password": "is required" }});
         }
         // On crée un nouvel utilisateur
         var user = new User(req.body.user);
+
         // On met à jour le nom d'utilisateur et le mot de passe
         user.username = req.body.user.email;
         user.setPassword(req.body.user.password);
@@ -85,7 +87,7 @@ module.exports = {
             // On crée un evenement
             Event.newEvent(enums.eventType[2], user, { kind: 'User', item: user }, {}).then(function() {
                 // On renvoie un statut OK avec l'utilisateur et le token
-                return res.sendStatus(202);
+                return res.status(200).json(user);
             });
         }).catch(next);
     },

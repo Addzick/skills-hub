@@ -7,6 +7,7 @@
 
 // Imporation des ressources externes
 var express = require('express');
+var favicon = require('serve-favicon');
 var http = require('http');
 var path = require('path');
 var methods = require('methods');
@@ -47,6 +48,8 @@ var isProduction = process.env.NODE_ENV === 'production';
 
 // Création de l'objet global pour l'application Express
 var app = express();
+app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')))
+
 // Définition du serveur HTTP et de socket
 var server = http.createServer(app);
 var io = require('socket.io').listen(server);
@@ -123,7 +126,7 @@ var connections = []
 
 io.sockets.on('connection', function(socket) {
   // New client
-  console.log(`New connection from : ${socket.address}`);    
+  console.log(`New connection from : ${socket.id}`);    
   // new event
   socket.on('new event', function(event) {
     console.log(event);
