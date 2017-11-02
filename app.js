@@ -131,8 +131,7 @@ io.sockets.on('connection', function(socket) {
 });
 
 // On met en place un broadcast sur chaque nouvel evenement
-Event.on('new', function(event){
-  console.log(event);
+Event.on('new', function(event){  
   io.sockets.emit("new event", { "event" : event });
 });
 
