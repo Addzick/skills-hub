@@ -34,7 +34,8 @@ var UserSchema = new mongoose.Schema({
   favorites: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'Category' }],
   notes: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'Rating' }],
   hash: String,
-  salt: String
+  salt: String,
+  connection: String
 }, {
   timestamps: true,
   toObject: {

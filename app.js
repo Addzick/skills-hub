@@ -1,3 +1,4 @@
+'use strict'
 /*
   Fichier     : app.js
   Auteur      : Youness FATH
@@ -40,8 +41,8 @@ var User = require('./models/User');
 require('./config/passport');
 
 // Récupération des controleurs
-require('./controllers/users');
- require('./controllers/articles');
+var userCtrl = require('./controllers/users');
+var articleCtrl = require('./controllers/articles');
 
 // Sommes-nous en mode production ?
 var isProduction = process.env.NODE_ENV === 'production';
@@ -122,20 +123,28 @@ app.use(function(err, req, res, next) {
   }});
 });
 
-var connections = []
-
 io.sockets.on('connection', function(socket) {
-  // New client
-  console.log(`New connection from : ${socket.id}`);    
-  // new event
-  socket.on('new event', function(event) {
-    console.log(event);
+  // Log connection
+  console.log(`${ socket.id } : connection opened ...`);
+
+  socket.on('set socket', function(username) {
+    userCtrl.setSocketId(username, socket.id);
+  });
+
+  socket.on('unset socket', function(username) {
+    userCtrl.unsetSocketId(username);
+  });
+  
+  socket.on('disconnect', function() {
+    // Log connection
+    console.log(`${ socket.id } : connection closed`);
   });
 });
 
 // On met en place un broadcast sur chaque nouvel evenement
-Event.on('new', function(event){  
-  io.sockets.emit("new event", { "event" : event });
+Event.on('new', function(event) {  
+  console.log(`${ event.user.email } has emitted an event of type '${ event.type }' at ${ new Date(event.createdAt).toLocaleTimeString() }`);
+  io.sockets.emit('new event', event);
 });
 
 // Démarrage du serveur

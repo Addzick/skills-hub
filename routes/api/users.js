@@ -21,9 +21,9 @@ router.param('category', controller.preloadCategory);
 // Authentifie un utilisateur
 router.post('/login', controller.login);
 
-// POST : http://<url-site-web:port>/api/logout
+// DELETE : http://<url-site-web:port>/api/logout
 // Deconnecte un utilisateur authentifié
-router.post('/logout', auth.required, controller.logout);
+router.delete('/:username', controller.logout);
 
 // POST : http://<url-site-web:port>/api/register
 // Enregistre un nouvel utilisateur

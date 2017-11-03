@@ -81,14 +81,18 @@ module.exports = {
     // ******************************//
     logout: function(req, res, next) {
         // On recherche l'utilisateur authentifié
-        User.findById(req.payload.id).then(function(user) {
+        User.findOne({ username: req.params.username }).then(function(user) {
             // Aucun utilisateur, on renvoie un statut 401
-            if(!user){ return res.sendStatus(401); }
-            // On crée un evenement
-            Event.newEvent(enums.eventType[2], user, { kind: 'User', item: user }, {}).then(function() {
-                // On renvoie un statut OK avec l'utilisateur et le token
-                return res.status(200).json(user);
-            });
+            if(user) { 
+                // On crée un evenement
+                Event.newEvent(enums.eventType[2], user, { kind: 'User', item: user }, {}).then(function() {
+                    // On renvoie un statut OK avec l'utilisateur
+                    return res.status(200).json({ user: user });
+                });
+             } else {
+                 return next();
+             }
+            
         }).catch(next);
     },
 
@@ -240,5 +244,42 @@ module.exports = {
             // On continue l'execution
             return next();
           }).catch(next);
-    }
+    },
+
+    // ******************************//
+    // SET SOCKET ID
+    // ******************************//
+    setSocketId: function(username, socketid) {
+        User.findOne({ username: username }).then(function(user) {
+            // On contrôle le user trouvé
+            if(user) {
+                // On ajoute l'id de la socket
+                user.connection = socketid;
+                user.save().then(function() {
+                    console.log(`Added socket id to user ==> ${ user.username }`);
+                });
+            }
+        }).catch(function(err){
+            console.error(err);
+        });
+    },
+
+    // ******************************//
+    // UNSET SOCKET ID
+    // ******************************//
+    unsetSocketId: function(username) {
+        User.findOne({ username: username }).then(function(user) {
+            // On contrôle le user trouvé
+            if(user) {
+                // On ajoute l'id de la socket
+                user.connection = '';
+                user.save().then(function() {
+                    console.log(`Removed socket id from user ==> ${ user.username }`);
+                });
+            }
+        }).catch(function(err){
+            console.error(err);
+        });
+    },
+
 };
