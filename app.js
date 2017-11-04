@@ -84,8 +84,9 @@ if (!isProduction) {
 mongoose.connect(config.dbUri,{ useMongoClient : true, user: config.dbUser, pass: config.dbPwd }, function(err){
   if(err) {
     console.error(err);
-  }
-  console.log("Connection open on DB : " + config.dbUri);
+  } else {
+    console.info("Connection open on DB : " + config.dbUri);
+  }  
 });
 
 // Définition des routes
@@ -95,6 +96,7 @@ app.use(require('./routes'));
 app.use(function(req, res, next) {
   var err = new Error('Not Found');
   err.status = 404;
+  console.error("404 : Error not found");
   next(err);
 });
 
@@ -102,11 +104,8 @@ app.use(function(req, res, next) {
 // Les erreurs contiendront la pile d'execution.
 if (!isProduction) {
   app.use(function(err, req, res, next) {
-    console.log(err.stack);
-
-    res.status(err.status || 500);
-
-    res.json({'errors': {
+    console.error(err.stack);
+    res.status(err.status || 500).json({'errors': {
       message: err.message,
       error: err
     }});
@@ -116,8 +115,8 @@ if (!isProduction) {
 // Traitement des erreurs survenus en mode production
 // Aucune information sensible ne doit être affichée ou transmise
 app.use(function(err, req, res, next) {
-  res.status(err.status || 500);
-  res.json({'errors': {
+  console.error(err.stack);
+  res.status(err.status || 500).json({'errors': {
     message: err.message,
     error: {}
   }});
@@ -125,29 +124,30 @@ app.use(function(err, req, res, next) {
 
 io.sockets.on('connection', function(socket) {
   // Log connection
-  console.log(`${ socket.id } : connection opened ...`);
+  console.info(`${ socket.id } : connection opened ...`);
 
+  // Set socket ID
   socket.on('set socket', function(username) {
     userCtrl.setSocketId(username, socket.id);
   });
 
+  // Unset socket ID
   socket.on('unset socket', function(username) {
     userCtrl.unsetSocketId(username);
   });
   
+  // Disconnection
   socket.on('disconnect', function() {
-    // Log connection
-    console.log(`${ socket.id } : connection closed`);
+    console.info(`${ socket.id } : connection closed`);
   });
 });
 
 // On met en place un broadcast sur chaque nouvel evenement
 Event.on('new', function(event) {  
-  console.log(`${ event.user.email } has emitted an event of type '${ event.type }' at ${ new Date(event.createdAt).toLocaleTimeString() }`);
   io.sockets.emit('new event', event);
 });
 
 // Démarrage du serveur
 server.listen( process.env.PORT || 3000, function(){
-  console.log('Listening on port ' + server.address().port);
+  console.info('Server is listening on port ' + server.address().port);
 });
