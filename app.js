@@ -81,7 +81,7 @@ if (!isProduction) {
 }
 
 // Connexion à la base de données
-mongoose.connect(config.dbUri,{ user: config.dbUser, pass: config.pass }, function(err){
+mongoose.connect(config.dbUri,{ useMongoClient : true, user: config.dbUser, pass: config.pass }, function(err){
   if(err) {
     console.log(err);
   }
