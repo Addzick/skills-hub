@@ -49,19 +49,18 @@ var isProduction = process.env.NODE_ENV === 'production';
 
 // Création de l'objet global pour l'application Express
 var app = express();
+app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')))
 
-// Connexion à la base de données
-mongoose.connect(config.dbUri,{ useMongoClient : true, user: config.dbUser, pass: config.dbPwd }, function(err){
-  if(err) {
-    console.error(err);
-  } else {
-    console.info("Connection open on DB : " + config.dbUri);
-  }  
-});
+// Définition du serveur HTTP et de socket
+var server = http.createServer(app);
+var io = require('socket.io').listen(server);
 
 // Définition du cross-origin resource sharing (CORS). 
 // C'est un mécanisme de permettant d'accèder à des ressources protégées (ex : une police de caractère) depuis un autre domaine que celui de l'application
 app.use(cors());
+
+// Définition de l'objet utilisé pour logger les informations
+app.use(logger('dev'));
 
 // Définition de l'objet utilisé pour le traitement du corps des requêtes HTTP
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -72,18 +71,22 @@ app.use(methodOverride());
 
 // Définition du répéertoire contenant les fichiers publics (ex: feuilles de styles, images, fichiers HTML, ...)
 app.use(express.static(__dirname + '/public'));
-app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
-
-// Définition de l'objet utilisé pour logger les informations
-app.use(logger('dev'));
-
 // Définition de la méthode de traitement des erreur
 if (!isProduction) {
   app.use(errorhandler());
 }
 
+// Connexion à la base de données
+mongoose.connect(config.dbUri,{ useMongoClient : true, user: config.dbUser, pass: config.dbPwd }, function(err){
+  if(err) {
+    console.error(err);
+  } else {
+    console.info("Connection open on DB : " + config.dbUri);
+  }  
+});
+
 // Définition des paramètres d'une session
-var MongoStore = require('connect-mongo')(express);
+var MongoStore = require('connect-mongo')(session);
 app.use(session({ 
   secret: config.secret, 
   cookie: { 
@@ -92,7 +95,7 @@ app.use(session({
   }, 
   store: new MongoStore({ mongooseConnection: connection }),
   resave: false, 
-  saveUninitialized: false  })); 
+  saveUninitialized: false  }));
 
 // Définition des routes
 app.use(require('./routes'));
@@ -127,11 +130,6 @@ app.use(function(err, req, res, next) {
   }});
 });
 
-// Définition du serveur HTTP et de socket
-var server = http.createServer(app);
-var io = require('socket.io').listen(server);
-
-// Définition des méthodes attribuées au socket
 io.sockets.on('connection', function(socket) {
   // Log connection
   console.info(`${ socket.id } : connection opened ...`);
