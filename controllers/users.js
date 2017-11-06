@@ -101,7 +101,7 @@ module.exports = {
     // ******************************//
     edit: function(req, res, next) {
         // On recherche l'utilisateur authentifié
-        User.findById(req.payload.id).then(function(user) {
+        User.findById(req.payload.user.id).then(function(user) {
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }
             // On modifie uniquement les infos modifiées
@@ -147,7 +147,7 @@ module.exports = {
     // ******************************//
     favorite:  function(req, res, next) {
         // On recherche l'utilisateur authentifié
-        User.findById(req.payload.id).then(function(user) {
+        User.findById(req.payload.user.id).then(function(user) {
             // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
             if(!user) { return res.sendStatus(401); }
             // On récupére la categorie
@@ -175,7 +175,7 @@ module.exports = {
     // ******************************//
     unfavorite: function(req, res, next) {
         // On recherche l'utilisateur authentifié
-        User.findById(req.payload.id).then(function(user) {
+        User.findById(req.payload.user.id).then(function(user) {
             // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
             if(!user){ return res.sendStatus(401); }
             // On récupére la categorie
@@ -203,7 +203,7 @@ module.exports = {
     // ******************************//
     getById: function(req, res, next) {
         // On recherche l'utilisateur authentifié
-        User.findById(req.payload.id)
+        User.findById(req.payload.user.id)
         .populate({
             path: 'favorites',
             options: {
