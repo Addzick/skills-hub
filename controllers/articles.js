@@ -24,7 +24,6 @@ module.exports = {
     // CREATE
     // ******************************//
     create: function(req, res, next) {
-        console.log(req.payload);
         // On recherche l'utilisateur authentifié
         User.findById(req.payload.id).then(function(user) {
             // Si aucun utilisateur trouvé, on renvoie un statut 401
