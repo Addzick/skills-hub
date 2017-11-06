@@ -142,9 +142,11 @@ io.sockets.on('connection', function(socket) {
 });
 
 // On met en place un broadcast sur chaque nouvel evenement
-Event.on('new', function(event) {  
-  console.log(`${ event.user.email } has emitted an event of type '${ event.type }' at ${ new Date(event.createdAt).toLocaleTimeString() }`);
-  io.sockets.emit('new event', event);
+Event.on('new', function(newEvent) {  
+  // On renvoie l'evenement avec ces sous-documents
+  Event.findById(newEvent._id).populate('user').populate('source').populate('root').exec(function(event) {
+    io.sockets.emit('new event', event);
+  });
 });
 
 // Démarrage du serveur
