@@ -25,7 +25,7 @@ module.exports = {
     // ******************************//
     create: function(req, res, next) {
         // On recherche l'utilisateur authentifié
-        User.findById(req.payload.user.id).then(function(user) {
+        User.findById(req.payload.id).then(function(user) {
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }          
             // On crée l'article
@@ -48,7 +48,7 @@ module.exports = {
     // ******************************//
     edit: function(req, res, next) {
         // On recherche l'utilisateur authentifié
-        User.findById(req.payload.user.id).then(function(user) {            
+        User.findById(req.payload.id).then(function(user) {            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }
             // On récupére l'article préchargé
@@ -78,7 +78,7 @@ module.exports = {
     // ******************************//
     publish: function(req, res, next) {
         // On recherche l'utilisateur authentifié
-        User.findById(req.payload.user.id).then(function(user) {
+        User.findById(req.payload.id).then(function(user) {
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }
             // On récupére l'article préchargé
@@ -103,7 +103,7 @@ module.exports = {
     // ******************************//
     delete:  function(req, res, next) {
         // On recherche l'utilisateur authentifié
-        User.findById(req.payload.user.id).then(function(user) {            
+        User.findById(req.payload.id).then(function(user) {            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }
             // On récupére l'article préchargé
@@ -126,7 +126,7 @@ module.exports = {
     // ******************************//
     comment:  function(req, res, next) {
         // On recherche l'utilisateur authentifié
-        User.findById(req.payload.user.id).then(function(user) {
+        User.findById(req.payload.id).then(function(user) {
             // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
             if(!user) { return res.sendStatus(401); }
             // On crée un commentaire            
@@ -151,7 +151,7 @@ module.exports = {
     // ******************************//
     uncomment:  function(req, res, next) {
         // On recherche l'utilisateur authentifié
-        User.findById(req.payload.user.id).then(function(user) {
+        User.findById(req.payload.id).then(function(user) {
             // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
             if(!user) { return res.sendStatus(401); }
             // On récupére le commentaire et l'article préchargé
@@ -178,7 +178,7 @@ module.exports = {
     // ******************************//
     like:  function(req, res, next) {
         // On recherche l'utilisateur authentifié
-        User.findById(req.payload.user.id).then(function(user) {
+        User.findById(req.payload.id).then(function(user) {
             // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
             if(!user) { return res.sendStatus(401); }
             // On crée un commentaire
@@ -203,7 +203,7 @@ module.exports = {
     // ******************************//
     unlike:  function(req, res, next) {
         // On recherche l'utilisateur authentifié
-        User.findById(req.payload.user.id).then(function(user) {
+        User.findById(req.payload.id).then(function(user) {
             // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
             if(!user) { return res.sendStatus(401); }
             // On récupére le commentaire et l'article préchargé
@@ -291,7 +291,7 @@ module.exports = {
     // GETFEED
     // ******************************//
     getFeed: function(req, res, next) {
-        User.findById(req.payload.user.id).then(function(user) {
+        User.findById(req.payload.id).then(function(user) {
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }            
             // On prépare la requête
