@@ -10,6 +10,6 @@ module.exports = {
   // Phrase secrète pour la configuration de Passport
   secret: process.env.NODE_ENV === 'production' ? process.env.SECRET : 'secret',
   dbUri: process.env.NODE_ENV === 'production' ? process.env.MONGODB_URI : 'mongodb://localhost/skills-hub',
-  dbUser: process.env.NODE_ENV === 'production' ? process.env.MONGODB_USER : 'admin',
-  dbPwd: process.env.NODE_ENV === 'production' ? process.env.MONGODB_PWD : 'Supertango74*'
+  dbUser: process.env.NODE_ENV === 'production' ? process.env.MONGODB_USER : '',
+  dbPwd: process.env.NODE_ENV === 'production' ? process.env.MONGODB_PWD : ''
 };
