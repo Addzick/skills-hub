@@ -238,17 +238,17 @@ module.exports = {
         
         // A-t-on un titre ?
         if(typeof req.query.title !== 'undefined' ) {
-            query.title = { "$regex" : '.*' + req.query.title + '.*' };
+            query.title = { '$regex' : '.*' + req.query.title + '.*' };
         }
         
         // A-t-on un categorie ?
         if(typeof req.query.category !== 'undefined') {
-            query.categories = {"$in" : [req.query.category] };
+            query.categories = { '$in' : [req.query.category] };
         }
       
         // A-t-on un tag ?  
         if(typeof req.query.tag !== 'undefined' ) {
-            query.tags = {"$in" : [req.query.tag] };
+            query.tags = { '$in' : [req.query.tag] };
         }
       
         // A-t-on une limite ?
@@ -262,14 +262,13 @@ module.exports = {
         }
         
         // A-t-on un champ pour le tri ?
-        if(typeof req.query.sort !== undefined) {
+        if(typeof req.query.sort !== 'undefined') {
             opts.sort = req.query.sort;
         }
-
         // On renvoie le résultat après execution des requêtes
         return Promise.all([
             Article
-            .find(query,options)
+            .find(query, {}, opts)
             .populate('author')
             .populate('categories')
             .exec(),
@@ -330,14 +329,14 @@ module.exports = {
             }
           
             // A-t-on un champ pour le tri ?
-            if(typeof req.query.sort !== undefined) {
+            if(typeof req.query.sort !== 'undefined') {
                 opts.sort = req.query.sort;
             }
            
             // On renvoie le résultat après execution des requêtes
             return Promise.all([
                 Article
-                .find(query,options)
+                .find(query, {}, opts)
                 .populate('author')
                 .populate('categories')
                 .exec(),
