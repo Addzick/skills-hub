@@ -77,7 +77,7 @@ app.use(bodyParser.json());
 // Définition de l'objet permettant d'utiliser des verbes tels que PUT ou DELETE dans nos requêtes HTTP
 app.use(methodOverride());
 
-// Définition du répéertoire contenant les fichiers publics (ex: feuilles de styles, images, fichiers HTML, ...)
+// Définition du répertoire contenant les fichiers publics (ex: feuilles de styles, images, fichiers HTML, ...)
 app.use(express.static(__dirname + '/public'));
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 

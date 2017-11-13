@@ -242,23 +242,23 @@ module.exports = {
         }
         
         // A-t-on un categorie ?
-        if(typeof req.query.category !== 'undefined') {
-            query.categories = { '$in' : [req.query.category] };
+        if(typeof req.query.categories !== 'undefined') {
+            query.categories = { '$in' : req.query.categories };
         }
       
         // A-t-on un tag ?  
-        if(typeof req.query.tag !== 'undefined' ) {
-            query.tags = { '$in' : [req.query.tag] };
+        if(typeof req.query.tags !== 'undefined' ) {
+            query.tags = { '$in' : req.query.tags };
         }
       
         // A-t-on une limite ?
         if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
-            opts.limit = Number(size);
+            opts.limit = Number(req.query.size);
         }
         
         // A-t-on une page ?
         if(typeof req.query.page !== 'undefined' && req.query.page >= 1) {
-            opts.skip = Number((page - 1) * size);
+            opts.skip = Number((req.query.page - 1) * req.query.size);
         }
         
         // A-t-on un champ pour le tri ?
@@ -307,15 +307,10 @@ module.exports = {
             if(typeof req.query.title !== 'undefined' ) {
                 query.title = { "$regex" : '.*' + req.query.title + '.*' };
             }          
-          
-            // A-t-on un categorie ?
-            if(typeof req.query.category !== 'undefined') {
-                query.categories = {"$in" : [req.query.category] };
-            }
         
             // A-t-on un tag ?  
-            if(typeof req.query.tag !== 'undefined' ) {
-                query.tags = {"$in" : [req.query.tag] };
+            if(typeof req.query.tags !== 'undefined' ) {
+                query.tags = {"$in" : req.query.tags };
             }
           
             // A-t-on une taille ?
