@@ -19,10 +19,11 @@ var ArticleSchema = new mongoose.Schema({
   tags: [String],
   medias: [String],
   author: { type: mongoose.SchemaTypes.ObjectId, ref: 'User' },
-  categories: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'Category' }],
+  category: { type: mongoose.SchemaTypes.ObjectId, ref: 'Category' },
   comments: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'Comment' }],
   likes: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'Like' }],
-  reactions: Number,
+  nbComments: Number,
+  nbLikes: Number,
   publishedAt: Date
 }, {
   timestamps: true,

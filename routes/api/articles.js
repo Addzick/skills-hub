@@ -32,10 +32,6 @@ router.get('/', auth.optional, controller.getAll);
 // Renvoie l'article correspondant
 router.get('/:article', auth.optional, controller.getById);
 
-// GET : http://<url-site-web:port>/api/articles/feed
-// Renvoie les articles publiés dans les categories suivies par l'utilisateur
-router.get('/feed', auth.required, controller.getFeed);
-
 // GET : http://<url-site-web:port>/api/articles/tags/
 // Renvoie la liste complète des tags de tous les articles postés
 router.get('/tags', auth.optional, controller.getTags);

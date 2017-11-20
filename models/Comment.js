@@ -12,6 +12,7 @@ var mongoose = require('mongoose');
 var CommentSchema = new mongoose.Schema({
   body: String,
   author: { type: mongoose.SchemaTypes.ObjectId, ref: 'User' },
+  source: { kind : String, item: {type: mongoose.SchemaTypes.ObjectId, refPath: 'source.kind' } },
 }, {
   timestamps: true,
   toObject: {

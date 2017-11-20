@@ -10,7 +10,8 @@ var mongoose = require('mongoose');
 
 // Définition du schéma d'un like
 var LikeSchema =  new mongoose.Schema({
-    user: { type: mongoose.SchemaTypes.ObjectId, ref: 'User' }
+    author: { type: mongoose.SchemaTypes.ObjectId, ref: 'User' },
+    source: { kind : String, item: {type: mongoose.SchemaTypes.ObjectId, refPath: 'source.kind' } },
 }, {
   timestamps: true,
   toObject: {

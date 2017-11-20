@@ -19,6 +19,8 @@ var RatingSchema = new mongoose.Schema({
     concern:{ type: mongoose.SchemaTypes.ObjectId, ref: "Task" },
     comments:[{ type: mongoose.SchemaTypes.ObjectId, ref: "Comment" }],
     likes:[{ type: mongoose.SchemaTypes.ObjectId, ref: "Like" }],
+    nbComments: Number,
+    nbLikes: Number,
     // Timestamps
     publishedAt: Date,    
 });

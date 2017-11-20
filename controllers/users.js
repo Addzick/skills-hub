@@ -42,7 +42,7 @@ module.exports = {
         // On sauve le nouvel utilisateur
         user.save().then(function() {
             // On crée un evenement
-            Event.newEvent(enums.eventType[0], user, { kind: 'User', item: user }, {}).then(function() {
+            Event.newEvent('user_register', user, { kind: 'User', item: user }, {}).then(function() {
                 // On renvoie un statut OK avec l'utilisateur et l'evenement correspondant
                 return res.status(200).json({ token: user.generateJWT() });
             });
@@ -69,7 +69,7 @@ module.exports = {
            // Si aucun utilisateur n'existe, on renvoie une erreur
            if(!user) { return res.status(422).json(info); }
            // On crée un evenement
-           Event.newEvent(enums.eventType[1], user, { kind: 'User', item: user }, {}).then(function() {
+           Event.newEvent('user_login', user, { kind: 'User', item: user }, {}).then(function() {
                // On renvoie un statut OK avec l'utilisateur et le token
                return res.status(200).json({ token: user.generateJWT() });
            }).catch(next);
@@ -85,7 +85,7 @@ module.exports = {
             // Aucun utilisateur, on renvoie un statut 401
             if(user) { 
                 // On crée un evenement
-                Event.newEvent(enums.eventType[2], user, { kind: 'User', item: user }, {}).then(function() {
+                Event.newEvent('user_logout', user, { kind: 'User', item: user }, {}).then(function() {
                     // On renvoie un statut OK avec l'utilisateur
                     return res.status(200).json({ user: user });
                 });
@@ -131,7 +131,7 @@ module.exports = {
             // On sauve le nouvel utilisateur
             user.save().then(function() {
                 // On crée un evenement
-                Event.newEvent(enums.eventType[3], user, { kind: 'User', item: user }, {}).then(function() {
+                Event.newEvent('user_edit', user, { kind: 'User', item: user }, {}).then(function() {
                     // On renvoie un statut OK avec l'utilisateur et le token
                     return res.status(200).json({ 
                         token: user.generateJWT(),
@@ -227,23 +227,6 @@ module.exports = {
             // On renvoie un statut OK et l'utilisateur correctement rempli
             return res.status(200).json(user);
         }).catch(next);
-    },
-
-    // ******************************//
-    // PRELOAD CATEGORY
-    // ******************************//
-    preloadCategory: function(req, res, next) {
-        // On récupère le paramètre depuis la requête
-        var id = req.params.category;
-        // On recherche la categorie correspondante
-        Category.findById(id).then(function(category){
-            // Si aucune catégorie trouvée, on renvoie une erreur 404
-            if(!category) { return res.sendStatus(404); }        
-            // On remplit la requête avec la catégorie trouvée
-            req.category = category;
-            // On continue l'execution
-            return next();
-          }).catch(next);
     },
 
     // ******************************//

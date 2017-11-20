@@ -12,23 +12,35 @@ module.exports = {
       //-------------------------------//
       // Gestion des utilisateurs
       //-------------------------------//
-      'user_registered',  // 0 => Nouvel utilisateur
-      'user_login',       // 1 => Connexion d'un utilisateur
-      'user_logout',      // 2 => Déconnexion d'un utilisateur
-      'user_edit',        // 3 => Edition d'un utilisateur
-      'user_favorite',    // 4 => Ajout d'une catégorie favorie
-      'user_unfavorite',  // 5 => Suppression d'une catégorie favorie
+      'user_register',
+      'user_login', 
+      'user_logout', 
+      'user_edit', 
+      'user_favorite', 
+      'user_unfavorite',
       //-------------------------------//
       // Gestion des articles
       //-------------------------------//
-      'article_create',   // 6 => Creation d'un article
-      'article_edit',     // 7 => Edition d'un article
-      'article_publish',  // 8 => Publication d'un article
-      'article_delete',   // 9 => Suppression d'un article
-      'article_comment',  // 10 => Ajout d'un commentaire d'article
-      'article_uncomment',// 11 => Suppression d'un commentaire d'article
-      'article_like',     // 12 => Ajout d'un like d'article
-      'article_unlike',   // 13 => Suppression d'un like d'article
+      'article_create',
+      'article_edit',
+      'article_publish',
+      'article_delete',
+      //-------------------------------//
+      // Gestion des appels d'offres
+      //-------------------------------//
+      'tender_create',
+      'tender_edit',
+      'tender_publish',
+      'tender_cancel',
+      'tender_close',
+      'tender_delete',
+      //-------------------------------//
+      // Gestion des reactions
+      //-------------------------------//
+      'comment',
+      'uncomment',
+      'like',
+      'unlike',
     ] 
   };
   
