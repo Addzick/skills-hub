@@ -135,6 +135,7 @@ module.exports = {
                 var article = req.article;
                 // On ajoute le commentaire à l'article
                 article.comments.push(comment);
+                articles.reactions += 1;
                 article.save().then(function() {
                     // On crée un evenement
                     Event.newEvent(enums.eventType[10], user, { kind: 'comment', item: comment }, { kind: 'article', item: article }).then(function() {
@@ -161,6 +162,7 @@ module.exports = {
             return Comment.findByIdAndRemove(comment._id).then(function(){
                 // On supprime le lien avec l'article
                 article.comments.remove(comment);
+                articles.reactions -= 1;
                 // On sauve l'article
                 article.save().then(function() {
                     // On crée un evenement
@@ -187,6 +189,7 @@ module.exports = {
                 var article = req.article;
                 // On ajoute le commentaire à l'article
                 article.likes.push(like);
+                articles.reactions += 1;
                 article.save().then(function() {
                     // On crée un evenement
                     Event.newEvent(enums.eventType[12], user, { kind: 'like', item: like }, { kind: 'article', item: article }).then(function() {
@@ -213,6 +216,7 @@ module.exports = {
             return Like.findByIdAndRemove(like._id).then(function(){
                 // On supprime le lien avec l'article
                 article.likes.remove(like);
+                articles.reactions -= 1;
                 // On sauve l'article
                 article.save().then(function() {
                     // On crée un evenement
@@ -250,7 +254,11 @@ module.exports = {
         if(typeof req.query.tags !== 'undefined' ) {
             query.tags = { '$in' : req.query.tags };
         }
-      
+
+        // A-t-on un champ pour le tri ?
+        if(typeof req.query.sort !== 'undefined') {
+            opts.sort = req.query.sort;
+        }      
         // A-t-on une limite ?
         if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
             opts.limit = Number(req.query.size);
@@ -260,11 +268,7 @@ module.exports = {
         if(typeof req.query.page !== 'undefined' && req.query.page >= 1) {
             opts.skip = Number((req.query.page - 1) * req.query.size);
         }
-        
-        // A-t-on un champ pour le tri ?
-        if(typeof req.query.sort !== 'undefined') {
-            opts.sort = req.query.sort;
-        }
+
         // On renvoie le résultat après execution des requêtes
         return Promise.all([
             Article
@@ -313,6 +317,11 @@ module.exports = {
                 query.tags = {"$in" : req.query.tags };
             }
           
+            // A-t-on un champ pour le tri ?
+            if(typeof req.query.sort !== 'undefined') {
+                opts.sort = req.query.sort;
+            }
+
             // A-t-on une taille ?
             if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
                 opts.limit = Number(size);
@@ -321,11 +330,6 @@ module.exports = {
             // A-t-on une page ?
             if(typeof req.query.page !== 'undefined' && req.query.page >= 1) {
                 opts.skip = Number((page - 1) * size);
-            }
-          
-            // A-t-on un champ pour le tri ?
-            if(typeof req.query.sort !== 'undefined') {
-                opts.sort = req.query.sort;
             }
            
             // On renvoie le résultat après execution des requêtes

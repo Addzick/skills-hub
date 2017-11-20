@@ -44,6 +44,7 @@ var UserSchema = new mongoose.Schema({
       delete ret.hash;
       delete ret.salt;
       delete ret.__v;
+      ret.displayName = doc.firstname + ' ' + doc.lastname
     }
   },
   toJSON: {
@@ -52,6 +53,7 @@ var UserSchema = new mongoose.Schema({
       delete ret.hash;
       delete ret.salt;
       delete ret.__v;
+      ret.displayName = doc.firstname + ' ' + doc.lastname
     }
   }
 });

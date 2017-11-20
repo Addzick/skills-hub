@@ -22,6 +22,7 @@ var ArticleSchema = new mongoose.Schema({
   categories: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'Category' }],
   comments: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'Comment' }],
   likes: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'Like' }],
+  reactions: Number,
   publishedAt: Date
 }, {
   timestamps: true,
