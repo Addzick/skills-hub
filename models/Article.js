@@ -18,10 +18,10 @@ var ArticleSchema = new mongoose.Schema({
   body: String,
   tags: [String],
   medias: [String],
-  author: { type: mongoose.SchemaTypes.ObjectId, ref: 'User' },
-  category: { type: mongoose.SchemaTypes.ObjectId, ref: 'Category' },
-  comments: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'Comment' }],
-  likes: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'Like' }],
+  author: { type: mongoose.SchemaTypes.ObjectId, ref: 'user' },
+  category: { type: mongoose.SchemaTypes.ObjectId, ref: 'category' },
+  comments: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'comment' }],
+  likes: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'like' }],
   nbComments: Number,
   nbLikes: Number,
   publishedAt: Date
@@ -40,20 +40,29 @@ var ArticleSchema = new mongoose.Schema({
 });
 
 // Définition du plugin utilisé pour la validation d'un champ unique
-ArticleSchema.plugin(uniqueValidator, { message: 'is already taken' });
+ArticleSchema.plugin(uniqueValidator, { message: 'already exists' });
 
-// Définition du traitement à executer avant validation
-ArticleSchema.pre('validate', function(next){
-  if(!this.slug)  {
-    this.slugify();
-  }
-  next();
-});
+// Définition des hooks
+ArticleSchema
+.pre('validate', slugify)
+.pre('findOne', autoload)
+.pre('find', autoload);
 
 // Définition du traitement de "slugification"
-ArticleSchema.methods.slugify = function() {
-  this.slug = slug(this.title) + '-' + (Math.random() * Math.pow(36, 6) | 0).toString(36);
+ArticleSchema.methods.slugify = function(next) {
+  if(!this.slug)  {
+    this.slug = slug(this.title) + '-' + (Math.random() * Math.pow(36, 6) | 0).toString(36);
+  }
+  next();
+};
+
+// Définition du traitement de population
+ArticleSchema.methods.autoload = function(next) {
+  this
+  .populate('author')
+  .populate('category');
+  next();
 };
 
 // Attribution du schéma au modèle d'article
-mongoose.model('Article', ArticleSchema);
+mongoose.model('article', ArticleSchema);

@@ -19,17 +19,40 @@ var PropositionSchema =  new mongoose.Schema({
     workDate: Date,
     validityStart: Date,
     validityEnd: Date,    
-    author: { type: mongoose.SchemaTypes.ObjectId, ref: "User" },
-    source: { type: mongoose.SchemaTypes.ObjectId, ref: "Tender" },   
-    comments: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'Comment' }],
-    likes: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'Like' }],
+    author: { type: mongoose.SchemaTypes.ObjectId, ref: "user" },
+    source: { type: mongoose.SchemaTypes.ObjectId, ref: "tender" },   
+    comments: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'comment' }],
+    likes: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'like' }],
     nbComments: Number,
     nbLikes: Number,
     publishedAt: Date,
     acceptedAt: Date,
     rejectedAt: Date,
     canceledAt: Date,
+}, {
+  timestamps: true,
+  toObject: {
+    transform: function(doc, ret){
+      delete ret.__v;
+    }
+  },
+  toJSON: {
+    transform: function(doc, ret){
+      delete ret.__v;
+    }
+  }
 });
 
+// Définition des hooks
+PropositionSchema
+.pre('findOne', autoload)
+.pre('find', autoload);
+
+// Définition du traitement de population
+PropositionSchema.methods.autoload = function(next) {
+  this.populate('author').populate('source');
+  next();
+};
+
 // Attribution du schéma au modèle de proposition
-module.exports = mongoose.model('Proposition', PropositionSchema);
+module.exports = mongoose.model('proposition', PropositionSchema);

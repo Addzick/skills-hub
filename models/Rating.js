@@ -14,16 +14,42 @@ var RatingSchema = new mongoose.Schema({
     body: String, 
     value: { type: Number, min:0, max:5, required: true},
     // References
-    rater:{ type: mongoose.SchemaTypes.ObjectId, ref: "User" },
-    rated : { type: mongoose.SchemaTypes.ObjectId, ref: "User" },
-    concern:{ type: mongoose.SchemaTypes.ObjectId, ref: "Task" },
-    comments:[{ type: mongoose.SchemaTypes.ObjectId, ref: "Comment" }],
-    likes:[{ type: mongoose.SchemaTypes.ObjectId, ref: "Like" }],
+    author: { type: mongoose.SchemaTypes.ObjectId, ref: "user" },
+    target: { type: mongoose.SchemaTypes.ObjectId, ref: "user" },
+    concern:{ type: mongoose.SchemaTypes.ObjectId, ref: "task" },
+    comments:[{ type: mongoose.SchemaTypes.ObjectId, ref: "comment" }],
+    likes:[{ type: mongoose.SchemaTypes.ObjectId, ref: "like" }],
     nbComments: Number,
     nbLikes: Number,
     // Timestamps
     publishedAt: Date,    
+}, {
+  timestamps: true,
+  toObject: {
+    transform: function(doc, ret){
+      delete ret.__v;
+    }
+  },
+  toJSON: {
+    transform: function(doc, ret){
+      delete ret.__v;
+    }
+  }
 });
 
+// Définition des hooks
+RatingSchema
+.pre('findOne', autoload)
+.pre('find', autoload);
+
+// Définition du traitement de population
+RatingSchema.methods.autoload = function(next) {
+  this
+  .populate('author')
+  .populate('target')
+  .populate('concern');
+  next();
+};
+
 // Attribution du schéma au modèle de note
-module.exports = mongoose.model('Rating', RatingSchema);
+module.exports = mongoose.model('rating', RatingSchema);

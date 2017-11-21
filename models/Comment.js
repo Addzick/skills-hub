@@ -11,7 +11,7 @@ var mongoose = require('mongoose');
 // Définition du schéma d'un commentaire
 var CommentSchema = new mongoose.Schema({
   body: String,
-  author: { type: mongoose.SchemaTypes.ObjectId, ref: 'User' },
+  author: { type: mongoose.SchemaTypes.ObjectId, ref: 'user' },
   source: { kind : String, item: {type: mongoose.SchemaTypes.ObjectId, refPath: 'source.kind' } },
 }, {
   timestamps: true,
@@ -27,5 +27,18 @@ var CommentSchema = new mongoose.Schema({
   }
 });
 
+// Définition des hooks
+CommentSchema
+.pre('findOne', autoload)
+.pre('find', autoload);
+
+// Définition du traitement de population
+CommentSchema.methods.autoload = function(next) {
+  this
+  .populate('author')
+  .populate('source.item');
+  next();
+};
+
 // Attribution du schéma au modèle de commentaire
-mongoose.model('Comment', CommentSchema);
+mongoose.model('comment', CommentSchema);

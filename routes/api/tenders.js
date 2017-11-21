@@ -1,22 +1,17 @@
 /*
-  Fichier     : routes/api/tenders.js
+  Fichier     : routes/api/users.js
   Auteur      : Youness FATH
   Date        : 24.10.2017
-  Description : Contient la définition des routes d'accès à l'api de gestion des appels d'offres
+  Description : Contient la définition des routes d'accès à l'api de gestion des utilisateurs
 */
 
 // Importation des ressources externes
-var router = require('express').Router();
-var mongoose = require('mongoose');
-
-// Récupération de l'objet de traitement de l'authentification
-var auth = require('../auth');
-
-// Récupération du controller
-var controller = require('../../controllers/tenders');
+import Router from 'express';
+import TenderCtrl from '../../controllers/tenders';
+import auth from '../auth';
 
 // On précharge l'appel d'offres s'il est passé en paramètre
-router.param('tender', controller.preloadTender);
+router.param('tender', controller.preload);
 
 // On précharge le commentaire s'il est passé en paramètre
 router.param('comment', controller.preloadComment);

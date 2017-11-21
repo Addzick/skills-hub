@@ -6,53 +6,45 @@
 */
 
 // Importation des ressources externes
-var mongoose    = require('mongoose');
-var passport    = require('passport');
-var enums       = require('../config/enum');
+import passport from 'passport';
+import mongoose from 'mongoose';
 
 // Récupération du modèle Mongoose correspondant à un utilisateur
-var User      = mongoose.model('User');
-var Category  = mongoose.model('Category');
-var Event     = mongoose.model('Event');
+var User      = mongoose.model('user');
+var Event     = mongoose.model('event');
 
+// Définition du controleur
+export class UserCtrl {
+    constructor() {}
 
-// Définition des fonctions exportables
-module.exports = {
-
-    // ******************************//
-    // REGISTER
-    // ******************************//
-    register: function(req, res, next) {
+    register(req, res, next) {
         // On contrôle la présence d'un email
         if(!req.body.user.email) {
             return res.status(422).json({ errors: { "email": "is required" }});
         }
-        
         // On contrôle la présence du mot de passe
         if(!req.body.user.password) {
             return res.status(422).json({ errors: { "password": "is required" }});
         }
         // On crée un nouvel utilisateur
         var user = new User(req.body.user);
-
         // On met à jour le nom d'utilisateur et le mot de passe
         user.username = req.body.user.email;
         user.setPassword(req.body.user.password);
-        
         // On sauve le nouvel utilisateur
-        user.save().then(function() {
+        return user
+        .save()
+        .then(function() {
             // On crée un evenement
-            Event.newEvent('user_register', user, { kind: 'User', item: user }, {}).then(function() {
-                // On renvoie un statut OK avec l'utilisateur et l'evenement correspondant
+            return Event
+            .newEvent('user_registered', user, { kind: 'user', item: user })
+            .then(function() {
                 return res.status(200).json({ token: user.generateJWT() });
             });
         }).catch(next);
-    },
+    }
 
-    // ******************************//
-    // LOGIN
-    // ******************************//
-    login: function(req, res, next) {
+    login(req, res, next) {
         // On contrôle la présence d'un email
         if(!req.body.user.email) {
             return res.status(422).json({ errors: { "email": "is required" }});
@@ -61,7 +53,6 @@ module.exports = {
         if(!req.body.user.password) {
             return res.status(422).json({ errors: { "password": "is required" }});
         }
-
         // On tente d'authentifier l'utilisateur
         passport.authenticate('local-login', { session: false }, function(err, user, info) {
            // Si une erreur a été rencontrée, on la renvoie
@@ -69,200 +60,158 @@ module.exports = {
            // Si aucun utilisateur n'existe, on renvoie une erreur
            if(!user) { return res.status(422).json(info); }
            // On crée un evenement
-           Event.newEvent('user_login', user, { kind: 'User', item: user }, {}).then(function() {
-               // On renvoie un statut OK avec l'utilisateur et le token
+           return Event
+           .newEvent('user_connected', user, { kind: 'user', item: user })
+           .then(function() {
                return res.status(200).json({ token: user.generateJWT() });
            }).catch(next);
        })(req, res, next);
-    },
+    }
 
-    // ******************************//
-    // LOGOUT
-    // ******************************//
-    logout: function(req, res, next) {
+    logout(req, res, next) {
         // On recherche l'utilisateur authentifié
-        User.findOne({ username: req.params.username }).then(function(user) {
-            // Aucun utilisateur, on renvoie un statut 401
-            if(user) { 
-                // On crée un evenement
-                Event.newEvent('user_logout', user, { kind: 'User', item: user }, {}).then(function() {
-                    // On renvoie un statut OK avec l'utilisateur
-                    return res.status(200).json({ user: user });
-                });
-             } else {
-                 return next();
-             }
-            
-        }).catch(next);
-    },
-
-    // ******************************//
-    // EDIT
-    // ******************************//
-    edit: function(req, res, next) {
-        // On recherche l'utilisateur authentifié
-        User.findById(req.payload.id).then(function(user) {
+        return User
+        .findById(req.payload.id)
+        .then(function(user) {
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }
-            // On modifie uniquement les infos modifiées
-            if(typeof req.body.user.email !== 'undefined') {
-                user.username   = req.body.user.email;
-                user.email      = req.body.user.email;
-            }
-            if(typeof req.body.user.password !== 'undefined') {
-                user.setPassword(req.body.user.password);
-            }
-            if(typeof req.body.user.firstname !== 'undefined') {
-                user.firstname = req.body.user.firstname;
-            }
-            if(typeof req.body.user.lastname !== 'undefined') {
-                user.lastname = req.body.user.lastname;
-            }
-            if(typeof req.body.user.bio !== 'undefined') {
-                user.bio = req.body.user.bio;
-            }
-            if(typeof req.body.user.image !== 'undefined'){
-                user.image = req.body.user.image;
-            }
-            if(typeof req.body.user.address !== 'undefined') {
-                user.address = req.body.user.address;
-            }
-            
-            // On sauve le nouvel utilisateur
-            user.save().then(function() {
-                // On crée un evenement
-                Event.newEvent('user_edit', user, { kind: 'User', item: user }, {}).then(function() {
-                    // On renvoie un statut OK avec l'utilisateur et le token
-                    return res.status(200).json({ 
-                        token: user.generateJWT(),
-                        user: user
-                    });
-                });
+            // On crée un evenement
+            Event
+            .newEvent('user_disconnected', user, { kind: 'user', item: user })
+            .then(function() {
+                return res.sendStatus(202);
             });
+            return next();
         }).catch(next);
-    },
+    }
 
-    // ******************************//
-    // FAVORITE
-    // ******************************//
-    favorite:  function(req, res, next) {
+    edit(req, res, next) {
         // On recherche l'utilisateur authentifié
-        User.findById(req.payload.id).then(function(user) {
-            // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
-            if(!user) { return res.sendStatus(401); }
-            // On récupére la categorie
-            var category = req.category;
-            // L'utilisateur a-t-il déja cette catégorie en favori ?
-            if(user.favorites.indexOf(category._id) !== -1) { 
-                // On renvoie un statut OK mais sans rien changé
-                return res.status(202).json({ user: user }); 
-            }
-            // On ajoute la categorie aux favoris de l'utilisateur
-            user.favorites.push(category);            
-            // On sauve
-            return user.save().then(function() {
-                // On crée un evenement
-                Event.newEvent(enums.eventType[4], user, { kind: 'Category', item: category }, { kind: 'User', item: user }).then(function() {
-                    // On renvoie un statut OK avec l'utilisateur
-                    return res.status(200).json({ user: user });
+        return User
+        .findByIdAndUpdate(req.payload.id, req.body.user)
+        .then(function(user) {
+            // Si aucun utilisateur trouvé, on renvoie un statut 401
+            if (!user) { return res.sendStatus(401); }
+            // On crée un evenement
+            Event
+            .newEvent('user_updated', user, { kind: 'user', item: user })
+            .then(function() {
+                // On renvoie un statut OK avec l'utilisateur et le token
+                return res.status(200).json({ 
+                    token: newUser.generateJWT(),
+                    user: newUser
                 });
             });
         }).catch(next);
-    },
-
-    // ******************************//
-    // UNFAVORITE
-    // ******************************//
-    unfavorite: function(req, res, next) {
-        // On recherche l'utilisateur authentifié
-        User.findById(req.payload.id).then(function(user) {
-            // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
-            if(!user){ return res.sendStatus(401); }
-            // On récupére la categorie
-            var category = req.category;
-            // L'utilisateur a-t-il déja cette catégorie en favori ?
-            if(user.favorites.indexOf(category._id) === -1) { 
-                // On renvoie un statut OK mais sans rien changé
-                return res.status(202).json({ user: user }); 
-            }
-            // On supprime la catégorie des favoris de l'utilisateur
-            user.favorites.remove(category);
-            // On sauve
-            return user.save().then(function() {
-                // On crée un evenement
-                Event.newEvent(enums.eventType[5], user, { kind: 'Category', item: category }, { kind: 'User', item: user }).then(function() {
-                    // On renvoie un statut OK avec l'utilisateur et le token
-                    return res.status(200).json({ user: user });
-                });
-            });
-        }).catch(next);
-    },
+    }
     
-    // ******************************//
-    // GETBYID
-    // ******************************//
-    getById: function(req, res, next) {
+    get(req, res, next) {
         // On recherche l'utilisateur authentifié
-        User.findById(req.payload.id)
-        .populate({
-            path: 'favorites',
-            options: {
-                sort: {
-                    title: 'asc'
-                }
-            }
-        })
-        .populate({
-            path: 'notes',
-            populate:['rater','concern'],
-            options: {
-                sort: {
-                    value: 'desc'
-                }
-            }
-        })
-        .exec().then(function(user) {
+        User
+        .findOne({ _id: req.payload.id })
+        .then(function(user) {
             // Aucun utilisateur, on renvoie un statut 401
             if(!user){ return res.sendStatus(401); }
             // On renvoie un statut OK et l'utilisateur correctement rempli
-            return res.status(200).json(user);
+            return res.status(200).json({ user: user });
         }).catch(next);
-    },
+    }
 
-    // ******************************//
-    // SET SOCKET ID
-    // ******************************//
-    setSocketId: function(username, socketid) {
-        User.findOne({ username: username }).then(function(user) {
-            // On contrôle le user trouvé
+    findOne(req, res, next) {
+        // On recherche l'utilisateur authentifié
+        User
+        .findOne({ username: req.params.username })
+        .then(function(user) {
+            // Aucun utilisateur, on renvoie un statut 401
+            if(!user){ return res.sendStatus(401); }
+            // On renvoie un statut OK et l'utilisateur correctement rempli
+            return res.status(200).json({ user: user });
+        }).catch(next);
+    }
+
+    findAll(req, res, next) {
+        var query = {};
+        var opts = { skip: 0, limit: 20, sort: { updatedAt: 'desc' } };
+        if(typeof req.query.lastname !== 'undefined' ) {
+            query.lastname = { $regex : '.*' + req.query.lastname + '.*' };
+        }
+        if(typeof req.query.firstname !== 'undefined' ) {
+            query.firstname = { $regex : '.*' + req.query.firstname + '.*' };
+        }
+        if(typeof req.query.abos !== 'undefined') {
+            query.abo = { $in : req.query.abos };
+        }
+        if(typeof req.query.categories !== 'undefined') {
+            query.favorites = { $in : req.query.categories };
+        }
+        if(typeof req.query.startStars !== 'undefined' && typeof req.query.endStars !== 'undefined') {
+            query.nbStars = { 
+                $gte: new Number(req.query.startStars),
+                $lte: new Number(req.query.endStars)
+            };
+        }
+        if(typeof req.query.longitude !== 'undefined' && typeof req.query.longitude !== 'undefined') {
+            query.address.loc = { 
+                loc: { 
+                    $near : { 
+                        $geometry : { 
+                            type : "Point" ,
+                            coordinates : [ new Number(req.query.longitude) , new Number(req.query.latitude) ] 
+                        } ,
+                        $maxDistance : new Number(req.query.distance) || 50
+                    } 
+                } 
+            }
+        }        
+        if(typeof req.query.sort !== 'undefined') {
+            opts.sort = req.query.sort;
+        }      
+        if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
+            opts.limit = Number(req.query.size);
+        }
+        if(typeof req.query.page !== 'undefined' && req.query.page >= 1) {
+            opts.skip = Number((req.query.page - 1) * req.query.size);
+        }
+
+        User
+        .find(query, {}, opts)
+        .exec()
+        .then(function(users) {
+            if(!users){ return res.sendStatus(401); }
+            return res.status(200).json({ users: users });
+        }).catch(next);
+    }
+
+    setSocketId(username, socketid) {
+        User
+        .findOneAndUpdate(
+            { username: username },
+            { connection: socketid }
+        )
+        .then(function(user) {
             if(user) {
-                // On ajoute l'id de la socket
-                user.connection = socketid;
-                user.save().then(function() {
-                    console.log(`Added socket id to user ==> ${ user.username }`);
-                });
+                console.log(`Added socket id to user ==> ${ user.username }`);
+            } else{
+                console.error(`Unable to set socket id for user ==> ${ user.username }`);
             }
         }).catch(function(err){
             console.error(err);
         });
-    },
+    }
 
-    // ******************************//
-    // UNSET SOCKET ID
-    // ******************************//
-    unsetSocketId: function(username) {
-        User.findOne({ username: username }).then(function(user) {
-            // On contrôle le user trouvé
+    unsetSocketId(username) {
+        User
+        .findOneAndUpdate(
+            { username: username },
+            { connection: '' }
+        ).then(function(user) {
             if(user) {
-                // On ajoute l'id de la socket
-                user.connection = '';
-                user.save().then(function() {
-                    console.log(`Removed socket id from user ==> ${ user.username }`);
-                });
+                console.log(`Removed socket id to user ==> ${ user.username }`);
+            } else{
+                console.error(`Unable to unset socket id for user ==> ${ user.username }`);
             }
-        }).catch(function(err){
+        }).catch(function(err) {
             console.error(err);
         });
-    },
-
-};
+    }
+}

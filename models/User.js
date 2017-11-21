@@ -6,10 +6,10 @@
 */
 
 // Importation des ressources externes
-var mongoose = require('mongoose');
-var uniqueValidator = require('mongoose-unique-validator');
-var crypto = require('crypto');
-var jwt = require('jsonwebtoken');
+import mongoose from 'mongoose';
+import uniqueValidator  from 'mongoose-unique-validator';
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 
 // Récupération de la phrase secrète depuis le fichier de configuration
 var secret = require('../config').secret;
@@ -23,16 +23,11 @@ var UserSchema = new mongoose.Schema({
   firstname: String,
   bio: String,
   image: String,
-  address: {
-    street: String,
-    complement: String,
-    zip: String,
-    city: String,
-    latitude: Number,
-    longitude: Number,
-  },      
-  favorites: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'Category' }],
-  notes: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'Rating' }],
+  address: { type: mongoose.SchemaTypes.ObjectId, ref: 'address' },
+  favorites: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'category' }],
+  //Stats
+  nbStars: Number,
+  // Connection
   hash: String,
   salt: String,
   connection: String
@@ -60,6 +55,26 @@ var UserSchema = new mongoose.Schema({
 
 // Définition du plugin utilisé pour la validation des champs uniques
 UserSchema.plugin(uniqueValidator, { message: 'is already taken.' });
+
+// Définition des hooks
+UserSchema
+.pre('findOne', autoload)
+.pre('find', autoload);
+
+// Définition du traitement de population
+UserSchema.methods.autoload = function(next) {
+  this
+  .populate('address')
+  .populate({
+    path: 'favorites',
+    options: {
+        sort: {
+            title: 'asc'
+        }
+    }
+  });
+  next();
+};
 
 // Définition de la méthode utilisée pour mettre à jour le mot de passe d'un utilisateur
 UserSchema.methods.setPassword = function(password){
@@ -95,4 +110,4 @@ UserSchema.methods.generateJWT = function() {
 };
 
 // Attribution du schéma au modèle d'utilisateur
-mongoose.model('User', UserSchema);
+mongoose.model('user', UserSchema);

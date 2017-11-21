@@ -6,44 +6,37 @@
 */
 
 // Importation des ressources externes
-var router = require('express').Router();
+import Router from 'express';
+import UserCtrl from '../../controllers/users';
+import auth from '../auth';
 
-// Récupération de l'objet de traitement de l'authentification
-var auth = require('../auth');
+// GET : http://<url-site-web:port>/api/account
+// Renvoie la liste des utilisateurs recherchés
+router.get('/account', new UserCtrl().get);
 
-// Récupération des controllers
-var controller      = require('../../controllers/users');
+// POST : http://<url-site-web:port>/api/account
+// Modifie le compte de l'utilisateur authentifié
+router.post('/account', auth.required, new UserCtrl().edit);
 
-// On précharge la catégorie si elle est en paramètre
-router.param('category', controller.preloadCategory);
+// GET : http://<url-site-web:port>/api/account
+// Renvoie la liste des utilisateurs recherchés
+router.get('/users', new UserCtrl().findAll);
+
+// GET : http://<url-site-web:port>/api/account
+// Renvoie la liste des utilisateurs recherchés
+router.get('/users/:username', new UserCtrl().findOne);
 
 // POST : http://<url-site-web:port>/api/login
 // Authentifie un utilisateur
-router.post('/login', controller.login);
-
-// DELETE : http://<url-site-web:port>/api/logout
-// Deconnecte un utilisateur authentifié
-router.delete('/:username', controller.logout);
+router.post('/login', new UserCtrl().login);
 
 // POST : http://<url-site-web:port>/api/register
 // Enregistre un nouvel utilisateur
-router.post('/register', controller.register);
+router.post('/register', new UserCtrl().register);
 
-// GET : http://<url-site-web:port>/api/account
-// Renvoie le compte de l'utilisateur authentifié
-router.get('/account', auth.required, controller.getById);
-
-// PUT : http://<url-site-web:port>/api/account
-// Modifie le compte de l'utilisateur authentifié
-router.put('/account', auth.required, controller.edit);
-
-// POST : http://<url-site-web:port>/api/account/favorite/:category
-// Ajoute une nouvelle categorie favorie
-router.post('/account/:category', controller.favorite);
-
-// DELETE : http://<url-site-web:port>/api/account/favorite/:category
-// Supprime une categorie favorie
-router.delete('/account/:category', controller.unfavorite);
+// DELETE : http://<url-site-web:port>/api/logout
+// Deconnecte un utilisateur authentifié
+router.delete('/logout', new UserCtrl().logout);
 
 // Exportation du routeur
 module.exports = router;

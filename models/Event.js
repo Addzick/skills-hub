@@ -7,14 +7,12 @@
 
 // Importation des ressources externes
 var mongoose = require('mongoose');
-var enums = require('../config/enum');
 
 // Définition du schéma d'un évènement
 var EventSchema =  new mongoose.Schema({
-    type: { type: String, required: true, lowercase:true, enum:  enums.eventType },
-    user: { type: mongoose.SchemaTypes.ObjectId, ref: 'User' },
-    source: { kind : String, item: {type: mongoose.SchemaTypes.ObjectId, refPath: 'source.kind' } },
-    root: { kind : String, item: {type: mongoose.SchemaTypes.ObjectId, refPath: 'root.kind' } },
+    type: { type: String, required: true, lowercase:true },
+    author: { type: mongoose.SchemaTypes.ObjectId, ref: 'user' },
+    source: { kind : String, item: {type: mongoose.SchemaTypes.ObjectId, refPath: 'source.kind' } },    
 }, {
   timestamps: true,
   toObject: {
@@ -29,19 +27,28 @@ var EventSchema =  new mongoose.Schema({
   }
 });
 
-EventSchema.statics.newEvent = function(type, user, source, root){
+// Définition des hooks
+EventSchema
+.pre('findOne', autoload)
+.pre('find', autoload)
+.post('save',function(event, next) { this.db.model('Event').emit('new', event); next(); });
+
+// Définition du traitement de population
+EventSchema.methods.autoload = function(next) {
+  this
+  .populate('author')
+  .populate('source.item');
+  next();
+};
+
+// Définition de la méthode de création
+EventSchema.statics.newEvent = function(type, author, source) {
   return this.create({
     type: type,
-    user: user,
-    source: source,
-    root: root
+    author: author,
+    source: source
   });
 }
 
-EventSchema.post('save',function(event, next){
-  this.db.model('Event').emit('new', event);
-  next();
-});
-
 // Attribution du schéma au modèle d'évènement
-module.exports = mongoose.model('Event', EventSchema);
+module.exports = mongoose.model('event', EventSchema);

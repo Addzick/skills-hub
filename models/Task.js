@@ -19,14 +19,37 @@ var TaskSchema =  new mongoose.Schema({
     onSite: Boolean,
     materialIsSupplied: Boolean,    
     // References
-    worker: { type: mongoose.SchemaTypes.ObjectId, ref: "User" },
-    customer:{ type: mongoose.SchemaTypes.ObjectId, ref: "Tender" },    
+    author: { type: mongoose.SchemaTypes.ObjectId, ref: "user" },
+    concern:{ type: mongoose.SchemaTypes.ObjectId, ref: "tender" },    
     // Timestamps
     publishedAt: Date,
     confirmedAt: Date,
     paidAt: Date,
     canceledAt: Date,
-}, { timestamps: true });
+}, {
+  timestamps: true,
+  toObject: {
+    transform: function(doc, ret){
+      delete ret.__v;
+    }
+  },
+  toJSON: {
+    transform: function(doc, ret){
+      delete ret.__v;
+    }
+  }
+});
+
+// Définition des hooks
+TaskSchema
+.pre('findOne', autoload)
+.pre('find', autoload);
+
+// Définition du traitement de population
+TaskSchema.methods.autoload = function(next) {
+  this.populate('author').populate('concern');
+  next();
+};
 
 // Attribution du schéma au modèle de tâche
-module.exports = mongoose.model('Task', TaskSchema);
+module.exports = mongoose.model('task', TaskSchema);

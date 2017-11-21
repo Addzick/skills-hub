@@ -6,20 +6,25 @@
 */
 
 // Importation des ressources externes
-var router = require('express').Router();
+import Router from 'express';
 
 // Récupération des routeurs prédéfinis pour chaque composant de l'api
-var users         = require('./users');
 var articles      = require('./articles');
-//var tenders       = require('./tenders');
-//var tasks         = require('./tasks');
-
+var categories    = require('./categories');
+var propositions  = require('./propositions');
+var ratings       = require('./ratings');
+var tasks         = require('./tasks');
+var tenders       = require('./tenders');
+var users         = require('./users');
 
 // Définition des routes d'accès pour chaque composant de l'api
-router.use('/', users);
 router.use('/articles', articles);
-//router.use('/tenders', tenders);
-//router.use('/tasks', tasks);
+router.use('/categories', categories);
+router.use('/propositions', propositions);
+router.use('/ratings', ratings);
+router.use('/tasks', tasks);
+router.use('/tenders', tenders);
+router.use('/', users);
 
 // Définition du traitement de transformation des erreurs de validation
 router.use(function(err, req, res, next){

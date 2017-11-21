@@ -6,27 +6,23 @@
 */
 
 // Importation des ressources externes
-var router = require('express').Router();
-var mongoose = require('mongoose');
-
-// Récupération de l'objet de traitement de l'authentification
-var auth = require('../auth');
+import Router from 'express';
+import mongoose from 'mongoose';
+import ArticleCtrl from '../../controllers/articles';
+import auth from '../auth';
 
 // Récupération du controller
-var controller = require('../../controllers/articles');
+var controller = new ArticleCtrl();
 
 // On précharge l'article s'il est passé en paramètre
-router.param('article', controller.preloadArticle);
-
-// On précharge le commentaire s'il est passé en paramètre
+router.param('article', controller.preload);
 router.param('comment', controller.preloadComment);
-
-// On précharge le like s'il est passé en paramètre
 router.param('like', controller.preloadLike);
+router.param('category', controller.preloadCategory);
 
 // GET : http://<url-site-web:port>/api/articles/
 // Renvoie la liste des articles après pagination
-router.get('/', auth.optional, controller.getAll);
+router.get('/', auth.optional, controller.fin);
 
 // GET : http://<url-site-web:port>/api/articles/:id
 // Renvoie l'article correspondant

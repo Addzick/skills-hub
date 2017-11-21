@@ -16,7 +16,19 @@ var CategorySchema = new mongoose.Schema({
     path: String,
     photo: String,
     video: String,
-}, { timestamps: true });
+}, {
+  timestamps: true,
+  toObject: {
+    transform: function(doc, ret){
+      delete ret.__v;
+    }
+  },
+  toJSON: {
+    transform: function(doc, ret){
+      delete ret.__v;
+    }
+  }
+});
 
 // Attribution du schéma au modèle de categorie
-module.exports = mongoose.model('Category', CategorySchema);
+module.exports = mongoose.model('category', CategorySchema);

@@ -7,6 +7,8 @@
 
 // Importation des ressources externes
 var mongoose = require('mongoose');
+var Event = require('./Event');
+var User = require('./User');
 
 // Définition du schéma d'un appel d'offres
 var TenderSchema = new mongoose.Schema({
@@ -18,21 +20,14 @@ var TenderSchema = new mongoose.Schema({
     workDate: Date,
     validityStart: Date,
     validityEnd: Date,
-    address: {
-        street: String,
-        complement: String,
-        zip: String,
-        city: String,
-        latitude: Number,
-        longitude: Number,
-    },
-    author: { type: mongoose.SchemaTypes.ObjectId, ref: "User" },
-    target: { type: mongoose.SchemaTypes.ObjectId, ref: "User" },
-    category:{ type: mongoose.SchemaTypes.ObjectId, ref: "Category" },    
-    comments:[{ type: mongoose.SchemaTypes.ObjectId, ref: "Comment" }],
-    likes:[{ type: mongoose.SchemaTypes.ObjectId, ref: "Like" }],
-    propositions:[{ type: mongoose.SchemaTypes.ObjectId, ref: "Proposition" }],
-    tasks:[{ type: mongoose.SchemaTypes.ObjectId, ref: "Task" }],
+    author: { type: mongoose.SchemaTypes.ObjectId, ref: "user" },
+    address: { type: mongoose.SchemaTypes.ObjectId, ref: 'address' },
+    target: { type: mongoose.SchemaTypes.ObjectId, ref: "user" },
+    category:{ type: mongoose.SchemaTypes.ObjectId, ref: "category" },    
+    comments:[{ type: mongoose.SchemaTypes.ObjectId, ref: "comment" }],
+    likes:[{ type: mongoose.SchemaTypes.ObjectId, ref: "like" }],
+    propositions:[{ type: mongoose.SchemaTypes.ObjectId, ref: "proposition" }],
+    tasks:[{ type: mongoose.SchemaTypes.ObjectId, ref: "task" }],
     nbComments: Number,
     nbLikes: Number,
     nbPropositions: Number,
@@ -41,7 +36,34 @@ var TenderSchema = new mongoose.Schema({
     publishedAt: Date,
     closedAt: Date,
     canceledAt: Date, 
-}, { timestamps: true });
+}, {
+    timestamps: true,
+    toObject: {
+      transform: function(doc, ret){
+        delete ret.__v;
+      }
+    },
+    toJSON: {
+      transform: function(doc, ret){
+        delete ret.__v;
+      }
+    }
+  });
+
+// Définition des hooks
+TenderSchema
+.pre('findOne', autoload)
+.pre('find', autoload);
+
+// Définition du traitement de population
+TenderSchema.methods.autoload = function(next) {
+    this
+    .populate('address')
+    .populate('author')
+    .populate('target')
+    .populate('category');
+  next();
+};
 
 // Attribution du schéma au modèle d'appel d'offres
-module.exports = mongoose.model('Tender', TenderSchema);
+module.exports = mongoose.model('tender', TenderSchema);
