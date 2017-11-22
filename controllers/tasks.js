@@ -12,33 +12,7 @@ const PublicationCtrl = require('./publications');
 // Définition du controleur
 class TaskCtrl extends PublicationCtrl {
     constructor(){
-        super('task');
-    }
-
-    getQueryFromRequest(){
-        var query = super.getQueryFromRequest(req);        
-        if(typeof req.query.startAmount !== 'undefined' && typeof req.query.endAmount !== 'undefined') {
-            query.amount = { 
-                $gte: new Number(req.query.startAmount),
-                $lte: new Number(req.query.endAmount)
-            }
-        }
-        if(typeof req.query.startCompletionDate !== 'undefined' && typeof req.query.endCompletionDate !== 'undefined') {
-            query.completionDate = { 
-                $gte: new ISODate(req.query.startCompletionDate),
-                $lte: new ISODate(req.query.endCompletionDate)
-            }
-        }
-        if(typeof req.query.onSite !== 'undefined' ) {
-            query.onSite = req.query.onSite
-        }
-        if(typeof req.query.materialIsSupplied !== 'undefined' ) {
-            query.materialIsSupplied = req.query.materialIsSupplied
-        }        
-        if(typeof req.query.concern !== 'undefined' ) {
-            query.concern = { _id : mongoose.Types.ObjectId(req.query.concern) };
-        }
-        return query;
+        super();
     }
 
     confirm(req, res, next) {
@@ -116,23 +90,85 @@ class TaskCtrl extends PublicationCtrl {
         }).catch(next);
     }
 
+    getQueryFromRequest(req) {
+        var query = super.getQueryFromRequest(req);        
+        if(typeof req.query.startAmount !== 'undefined' && typeof req.query.endAmount !== 'undefined') {
+            query.amount = { 
+                $gte: new Number(req.query.startAmount),
+                $lte: new Number(req.query.endAmount)
+            }
+        }
+        if(typeof req.query.startCompletionDate !== 'undefined' && typeof req.query.endCompletionDate !== 'undefined') {
+            query.completionDate = { 
+                $gte: new ISODate(req.query.startCompletionDate),
+                $lte: new ISODate(req.query.endCompletionDate)
+            }
+        }
+        if(typeof req.query.onSite !== 'undefined' ) {
+            query.onSite = req.query.onSite
+        }
+        if(typeof req.query.materialIsSupplied !== 'undefined' ) {
+            query.materialIsSupplied = req.query.materialIsSupplied
+        }        
+        if(typeof req.query.concern !== 'undefined' ) {
+            query.concern = { _id : mongoose.Types.ObjectId(req.query.concern) };
+        }
+        return query;
+    }
+
+    preload(req, res, next) {
+        return super.preload(req, res, next,'task');
+    }
+
+    findOne(req, res, next) {
+        return super.findOne(req, res, next,'task');
+    }
+
+    findAll(req, res, next) {
+        return super.findAll(req, res, next,'task');
+    }
+
+    count(req, res, next) {
+        return super.count(req, res, next,'task');
+    }
+
+    create(req, res, next) {
+        return super.create(req, res, next,'task');
+    }
+
+    edit(req, res, next) {
+        return super.edit(req, res, next,'task');
+    }
+
+    publish(req, res, next) {
+        return super.publish(req, res, next,'task');
+    }
+
+    delete(req, res, next) {
+        return super.delete(req, res, next,'task');
+    }
+
+    comment(req, res, next) {
+        return super.comment(req, res, next,'task');
+    }
+
+    uncomment(req, res, next) {
+        return super.uncomment(req, res, next,'task');
+    }
+
+    like(req, res, next) {
+        return super.like(req, res, next,'task');
+    }
+
+    unlike(req, res, next) {
+        return super.unlike(req, res, next,'task');
+    }
+
     getRoutes() {
-        // On récupère le router
-        var router = super.getRoutes();
-
-        // POST : http://<url-site-web:port>/api/propositions/accept
-        // Accepte la task correspondante
+        var router = super.getRoutes('task');
         router.post('/:task/confirm', auth.required, this.confirm);
-
-        // POST : http://<url-site-web:port>/api/propositions/reject
-        // Rejette la task correspondante
         router.post('/:task/pay', auth.required, this.pay);
-
-        // POST : http://<url-site-web:port>/api/propositions/cancel
-        // Annule la task correspondante
         router.post('/:task/cancel', auth.required, this.cancel);
-
-        // On renvoie le router
         return router;
     }
 }

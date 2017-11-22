@@ -42,16 +42,6 @@ var ArticleSchema = new mongoose.Schema({
 // Définition du plugin utilisé pour la validation d'un champ unique
 ArticleSchema.plugin(uniqueValidator, { message: 'already exists' });
 
-// Définition des hooks
-ArticleSchema.pre('validate', function(next){ this.slugify(); next();});
-ArticleSchema.post('findOne', function(doc,next) { doc.autoload(); next(); });
-ArticleSchema.post('find', function(docs,next) { 
-  for(i=0; i < docs.length; i++) {
-    docs[i].autoload();
-  }
-  next(); 
-});
-
 // Définition du traitement de "slugification"
 ArticleSchema.methods.slugify = function() {
   if(!this.slug)  {
@@ -59,12 +49,25 @@ ArticleSchema.methods.slugify = function() {
   }
 };
 
-// Définition du traitement de population
-ArticleSchema.methods.autoload = function() {
+// Définition des hooks
+ArticleSchema.pre('validate', function(next) { 
+  this.slugify(); 
+  next();
+});
+
+ArticleSchema.pre('findOne', function(next) { 
   this
   .populate('author')
   .populate('category');
-};
+  next(); 
+});
+
+ArticleSchema.pre('find', function(next) { 
+  this
+  .populate('author')
+  .populate('category');
+  next();
+});
 
 // Attribution du schéma au modèle d'article
 module.exports = mongoose.model('article', ArticleSchema);

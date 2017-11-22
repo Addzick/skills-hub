@@ -41,20 +41,19 @@ var TaskSchema =  new mongoose.Schema({
 });
 
 // Définition des hooks
-TaskSchema.post('findOne', function(doc,next) { doc.autoload(); next(); });
-TaskSchema.post('find', function(docs,next) { 
-  for(i=0; i < docs.length; i++) {
-    docs[i].autoload();
-  }
-  next(); 
-});
-
-// Définition du traitement de population
-TaskSchema.methods.autoload = function() {
+TaskSchema.pre('findOne', function(next) { 
   this
   .populate('author')
   .populate('concern');
-};
+  next(); 
+});
+
+TaskSchema.pre('find', function(next) { 
+  this
+  .populate('author')
+  .populate('concern');
+  next();
+});
 
 // Attribution du schéma au modèle de tâche
 module.exports = mongoose.model('task', TaskSchema);

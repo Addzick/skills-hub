@@ -6,20 +6,18 @@
 */
 
 // Importation des ressources externes
-const mongoose = require('mongoose');
 const auth = require('../config/auth');
+const mongoose = require('mongoose');
+const User = mongoose.model('user');
+const Category = mongoose.model('category');
+const Event = mongoose.model('event');
+const Comment = mongoose.model('comment');
+const Like = mongoose.model('like');
 
-class PublicationCtrl {   
+// Définition du controleur de base
+module.exports = class PublicationCtrl {   
 
-    constructor(modelName) {
-        PublicationCtrl.ModelName = modelName;
-        PublicationCtrl.Model = mongoose.model(modelName);
-        PublicationCtrl.User = mongoose.model('user');
-        PublicationCtrl.Category = mongoose.model('category');
-        PublicationCtrl.Event = mongoose.model('event');
-        PublicationCtrl.Comment = mongoose.model('comment');
-        PublicationCtrl.Like = mongoose.model('like');
-      }
+    constructor() {}
 
     getQueryFromRequest(req) {
         
@@ -104,15 +102,15 @@ class PublicationCtrl {
         return childs;
     }
 
-    preload(req, res, next) {
+    preload(req, res, next, name) {
         // On recherche l'appel d'offres correspondant
-        return PublicationCtrl.Model
-        .findOne({ _id: mongoose.Types.ObjectId(req.params[PublicationCtrl.ModelName]) })
+        return mongoose.model(name)
+        .findOne({ _id: mongoose.Types.ObjectId(req.params[name]) })
         .then(function(result) {
             // Si aucun item trouvé, on renvoie une erreur 404
-            if(!result) { console.log(`${ PublicationCtrl.ModelName } not found`); return res.sendStatus(404); }
+            if(!result) { console.log(`${ name } not found`); return res.sendStatus(404); }
             // On remplit la requête avec l'item trouvé
-            req[PublicationCtrl.ModelName] = result;
+            req[name] = result;
             // On continue l'execution
             return next();
         }).catch(next);
@@ -120,7 +118,7 @@ class PublicationCtrl {
 
     preloadCategory(req, res, next) {
         // On recherche la categorie correspondante
-        return PublicationCtrl.Category
+        return Category
         .findOne({_id: mongoose.Types.ObjectId(req.params.category)})
         .then(function(category){
             // Si aucune catégorie trouvée, on renvoie une erreur 404
@@ -134,7 +132,7 @@ class PublicationCtrl {
 
     preloadComment(req, res, next) {
         // On recherche le commentaire correspondant
-        return PublicationCtrl.Comment
+        return Comment
         .findOne({_id: mongoose.Types.ObjectId(req.params.comment)})
         .then(function(comment){
             // Si aucun commentaire trouvé, on renvoie une erreur 404
@@ -148,7 +146,7 @@ class PublicationCtrl {
 
     preloadLike(req, res, next) {
         // On recherche le like correspondant
-        return PublicationCtrl.Like
+        return Like
         .findOne({_id: mongoose.Types.ObjectId(req.params.like)})
         .then(function(like) {
             // Si aucun like trouvé, on renvoie une erreur 404
@@ -160,11 +158,11 @@ class PublicationCtrl {
           }).catch(next);
     }
 
-    findOne(req, res, next) {
+    findOne(req, res, next, name) {
         // On execute la requête de sélection et on renvoie le résultat
-        return PublicationCtrl.Model
-        .findOne({_id: mongoose.Types.ObjectId(req.params[PublicationCtrl.ModelName])})
-        .populate(PublicationCtrl.getChildsFromRequest(req))
+        return mongoose.model(name)
+        .findOne({_id: mongoose.Types.ObjectId(req.params[name])})
+        .populate(this.getChildsFromRequest(req))
         .exec()
         .then(function(item) {
             if (!item) { return res.sendStatus(404); }            
@@ -172,11 +170,11 @@ class PublicationCtrl {
         }).catch(next);
     }
 
-    findAll(req, res, next) {
+    findAll(req, res, next, name) {
         // On renvoie le résultat après execution de la requête de sélection
-        return PublicationCtrl.Model
-        .find(PublicationCtrl.getQueryFromRequest(req), {}, PublicationCtrl.getOptionsFromRequest(req))
-        .populate(PublicationCtrl.getChildsFromRequest(req))
+        return mongoose.model(name)
+        .find(this.getQueryFromRequest(req), {}, this.getOptionsFromRequest(req))
+        .populate(this.getChildsFromRequest(req))
         .exec().then(function(items) {
             // On contrôle le résultat
             if (!result) { return res.sendStatus(404); }
@@ -185,10 +183,10 @@ class PublicationCtrl {
         }).catch(next);
     }
 
-    count(req, res, next) {
+    count(req, res, next, name) {
         // On compte et on renvoie le résultat du comptage
-        return PublicationCtrl.Model
-        .count(PublicationCtrl.getQueryFromRequest(req))
+        return mongoose.model(name)
+        .count(this.getQueryFromRequest(req))
         .then(function(result) {
             // On contrôle le résultat
             if (!result) { return res.sendStatus(404); }
@@ -197,22 +195,23 @@ class PublicationCtrl {
         }).catch(next);
     }
 
-    create(req, res, next) {
+    create(req, res, next, name) {
         // On recherche l'utilisateur authentifié
-        return PublicationCtrl.User
+        return User
         .findById(req.payload.id)
         .then(function(user) {
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }          
             // On crée l'item
-            var item = new PublicationCtrl.Model(req.body[this.ModelName]);
+            let model = mongoose.model(name)
+            var item = new model(req.body[name]);
             // On définit l'auteur
             item.author = user;
             // On crée l'item
-            return PublicationCtrl.Model.create(item).then(function(newItem) {
+            return model.create(item).then(function(newItem) {
                  // On crée un evenement
-                 return PublicationCtrl.Event
-                 .newEvent(`${ PublicationCtrl.ModelName }_created`, user, { kind: PublicationCtrl.ModelName, item: newItem })
+                 return Event
+                 .newEvent(`${ name }_created`, user, { kind: name, item: newItem })
                  .then(function() {
                     return res.sendStatus(202);
                  });
@@ -220,22 +219,22 @@ class PublicationCtrl {
         }).catch(next);
     }
 
-    edit(req, res, next) {
+    edit(req, res, next, name) {
         // On recherche l'utilisateur authentifié
-        return PublicationCtrl.User
+        return User
         .findById(req.payload.id)
         .then(function(user) {            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }
             // On contrôle que l'utilisateur soit bien l'auteur
-            if(req[PublicationCtrl.ModelName].author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }            
+            if(req[name].author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }            
             // On met à jour l'item
-            return PublicationCtrl.Model
-            .findOneAndUpdate({_id: item._id }, req.body[PublicationCtrl.ModelName])
+            return mongoose.model(name)
+            .findOneAndUpdate({_id: item._id }, req.body[name])
             .then(function(newItem) {
                 // On crée un evenement
-                return PublicationCtrl.Event
-                .newEvent(`${ PublicationCtrl.ModelName }_updated`, user, { kind: PublicationCtrl.ModelName, item: newItem })
+                return Event
+                .newEvent(`${ name }_updated`, user, { kind: name, item: newItem })
                 .then(function() {
                     return res.sendStatus(202);
                  });
@@ -243,24 +242,24 @@ class PublicationCtrl {
         }).catch(next);
     }
 
-    publish(req, res, next) {
+    publish(req, res, next, name) {
         // On recherche l'utilisateur authentifié
-        return PublicationCtrl.User
+        return User
         .findById(req.payload.id)
         .then(function(user) {            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }
             // On récupére l'item préchargé
-            var item = req[PublicationCtrl.ModelName];
+            var item = req[name];
             // On contrôle que l'utilisateur soit bien l'auteur
             if(req.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
             // On met à jour l'item            
-            return PublicationCtrl.Model
+            return mongoose.model(name)
             .findOneAndUpdate({_id: item._id }, {$set: { publishedAt: Date.now() }})
             .then(function(newItem) {
                 // On crée un evenement
-                return PublicationCtrl.Event
-                .newEvent(`${ PublicationCtrl.ModelName }_published`, user, { kind: PublicationCtrl.ModelName, item: newItem })
+                return Event
+                .newEvent(`${ name }_published`, user, { kind: name, item: newItem })
                 .then(function() {
                     return res.sendStatus(202);
                  });
@@ -268,22 +267,22 @@ class PublicationCtrl {
         }).catch(next);
     }
 
-    delete(req, res, next) {
+    delete(req, res, next, name) {
         // On recherche l'utilisateur authentifié
-        return PublicationCtrl.User
+        return User
         .findById(req.payload.id)
         .then(function(user) {            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }
             // On contrôle que l'utilisateur soit bien l'auteur
-            if(req[PublicationCtrl.ModelName].author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
+            if(req[name].author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
             // On supprime l'item
-            return PublicationCtrl.Model
+            return mongoose.model(name)
             .findByIdAndRemove(article._id)
             .then(function(newItem) {
                 // On crée un evenement
-                return PublicationCtrl.Event
-                .newEvent(`${ PublicationCtrl.ModelName }_deleted`, user, { kind: PublicationCtrl.ModelName, item: newItem })
+                return Event
+                .newEvent(`${ name }_deleted`, user, { kind: name, item: newItem })
                 .then(function() {
                     return res.sendStatus(202);
                  });
@@ -291,28 +290,28 @@ class PublicationCtrl {
         }).catch(next);
     }
 
-    comment(req, res, next) {
+    comment(req, res, next, name) {
         // On recherche l'utilisateur authentifié
-        return PublicationCtrl.User
+        return User
         .findById(req.payload.id)
         .then(function(user) {
             // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
             if(!user) { return res.sendStatus(401); }            
             // On récupére la source du commentaire
-            var source = req[PublicationCtrl.ModelName];
+            var source = req[name];
             // On crée un commentaire            
-            return PublicationCtrl.Comment.create({ 
+            return Comment.create({ 
                 body: req.body.comment.body, 
                 author: user,
-                source: { kind: PublicationCtrl.ModelName, item: source }
+                source: { kind: name, item: source }
              }).then(function(comment) {                
                 // On ajoute le commentaire à la source
-                return PublicationCtrl.Model
+                return mongoose.model(name)
                 .findOneAndUpdate({ _id: source._id }, { $push: { comments: comment }, $inc: { nbComments : 1 }})
                 .then(function() {
                     // On crée un evenement
-                    return PublicationCtrl.Event
-                    .newEvent(`${ PublicationCtrl.ModelName }_commented`, user, { kind: 'comment', item: comment })
+                    return Event
+                    .newEvent(`${ name }_commented`, user, { kind: 'comment', item: comment })
                     .then(function() {
                         return res.sendStatus(202);
                     });
@@ -321,24 +320,24 @@ class PublicationCtrl {
         }).catch(next);
     }
 
-    uncomment(req, res, next) {
+    uncomment(req, res, next, name) {
         // On recherche l'utilisateur authentifié
-        return PublicationCtrl.User
+        return User
         .findById(req.payload.id)
         .then(function(user) {
             // Si aucun utilisateur n'a été trouvé, on renvoie un statut 401
             if(!user) { return res.sendStatus(401); }
             // On récupére la source préchargée
-            var source = req[PublicationCtrl.ModelName];
+            var source = req[name];
             // On supprime le commentaire
-            return PublicationCtrl.Comment.findByIdAndRemove(req.comment._id).then(function(comment) {
+            return Comment.findByIdAndRemove(req.comment._id).then(function(comment) {
                 // On supprime le lien avec la source
-                return PublicationCtrl.Model
+                return mongoose.model(name)
                 .findOneAndUpdate({ _id: source._id }, { $pull: { comments: comment }, $inc: { nbComments : -1 }})
                 .then(function() {
                     // On crée un evenement
-                    return PublicationCtrl.Event
-                    .newEvent(`${ PublicationCtrl.ModelName }_uncommented`, user, { kind: 'comment', item: comment })
+                    return Event
+                    .newEvent(`${ name }_uncommented`, user, { kind: 'comment', item: comment })
                     .then(function() {
                         return res.sendStatus(202);
                     });
@@ -347,29 +346,29 @@ class PublicationCtrl {
         }).catch(next);
     }
 
-    like(req, res, next) {
+    like(req, res, next, name) {
         // On recherche l'utilisateur authentifié
-        return PublicationCtrl.User
+        return User
         .findById(req.payload.id)
         .then(function(user) {
             // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
             if(!user) { return res.sendStatus(401); }            
             // On récupére la source du like
-            var source = req[PublicationCtrl.ModelName];
+            var source = req[name];
             // On crée un like            
-            return PublicationCtrl.Like
+            return Like
             .create({ 
                 author: user,
-                source: { kind: PublicationCtrl.ModelName, item: source }
+                source: { kind: name, item: source }
              })
              .then(function(like) {                
                 // On ajoute le like à la source
-                return PublicationCtrl.Model
+                return mongoose.model(name)
                 .findOneAndUpdate({_id: source._id }, { $push: { likes: like }, $inc: { nbLikes : 1 } })
                 .then(function() {
                     // On crée un evenement
-                    return PublicationCtrl.Event
-                    .newEvent(`${ PublicationCtrl.ModelName }_liked`, user, { kind: 'like', item: like })
+                    return Event
+                    .newEvent(`${ name }_liked`, user, { kind: 'like', item: like })
                     .then(function() {
                         return res.sendStatus(202);
                     });
@@ -378,25 +377,25 @@ class PublicationCtrl {
         }).catch(next);
     }
 
-    unlike(req, res, next) {
+    unlike(req, res, next, name) {
         // On recherche l'utilisateur authentifié
-        return PublicationCtrl.User
+        return User
         .findById(req.payload.id)
         .then(function(user) {
             // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
             if(!user) { return res.sendStatus(401); }
             // On récupére la source préchargée
-            var source = req[PublicationCtrl.ModelName];
+            var source = req[name];
             // On supprime le like
-            return PublicationCtrl.Like
+            return Like
             .findByIdAndRemove(req.like._id)
             .then(function(like) {
                 // On supprime le lien avec la source
-                return PublicationCtrl.Model.findOneAndUpdate({ _id: source._id }, { $pull: { likes: like }, $inc: { nbLikes : -1 }})
+                return mongoose.model(name).findOneAndUpdate({ _id: source._id }, { $pull: { likes: like }, $inc: { nbLikes : -1 }})
                 .then(function() {
                     // On crée un evenement
-                    PublicationCtrl.Event
-                    .newEvent(`${ PublicationCtrl.ModelName }_unliked`, user, { kind: 'like', item: like })
+                    Event
+                    .newEvent(`${ name }_unliked`, user, { kind: 'like', item: like })
                     .then(function() {
                         return res.sendStatus(202);
                     });
@@ -405,64 +404,23 @@ class PublicationCtrl {
         }).catch(next);
     }
 
-    getRoutes() {
-        // On récupère le router
-        let router = require('express').Router();
-
-        // On précharge l'article s'il est passé en paramètre
-        router.param(`${ PublicationCtrl.ModelName }`, this.preload);
+    getRoutes(name) {
+        var router = require('express').Router();
+        router.param(`${ name }`, this.preload);
         router.param('comment', this.preloadComment);
         router.param('like', this.preloadLike);
         router.param('category', this.preloadCategory);
-
-        // GET : http://<url-site-web:port>/api/articles/
-        // Renvoie la liste des elements après pagination
         router.get('/', auth.optional, this.findAll);
-
-        // GET : http://<url-site-web:port>/api/articles/
-        // Renvoie le nombre d'elements
         router.get('/count', auth.optional, this.count);
-
-        // GET : http://<url-site-web:port>/api/articles/:id
-        // Renvoie l'article correspondant
-        router.get(`/:${ PublicationCtrl.ModelName }`, auth.optional, this.findOne);
-
-        // POST : http://<url-site-web:port>/api/articles/create
-        // Crée un article
+        router.get(`/:${ name }`, auth.optional, this.findOne);
         router.post('/create', auth.required, this.create);
-
-        // POST : http://<url-site-web:port>/api/articles/edit
-        // Met à jour l'article correspondant
-        router.post(`/:${ PublicationCtrl.ModelName }/edit`, auth.required, this.edit);
-
-        // POST : http://<url-site-web:port>/api/articles/publish
-        // Publie l'article correspondant
-        router.post(`/:${ PublicationCtrl.ModelName }/publish`, auth.required, this.publish);
-
-        // POST : http://<url-site-web:port>/api/articles/:article
-        // Supprime un article existant
-        router.delete(`/:${ PublicationCtrl.ModelName }/delete`, auth.required, this.delete);
-
-        // POST : http://<url-site-web:port>/api/articles/:article/comments
-        // Ajout un nouveau commentaire à l'article correspondant
-        router.post(`/:${ PublicationCtrl.ModelName }/comment`, auth.required, this.comment);
-
-        // DELETE : http://<url-site-web:port>/api/articles/:article/comments
-        // Supprime un commentaire de l'article correspondant
-        router.delete(`/:${ PublicationCtrl.ModelName }/:comment`, auth.required, this.uncomment);
-
-        // POST : http://<url-site-web:port>/api/articles/:article/comments
-        // Ajout un nouveau like à l'article correspondant
-        router.post(`/:${ PublicationCtrl.ModelName }/like`, auth.required, this.like);
-
-        // DELETE : http://<url-site-web:port>/api/articles/:article/comments
-        // Supprime un like de l'article correspondant
-        router.delete(`/:${ PublicationCtrl.ModelName }/:like`, auth.required, this.unlike);
-
-        // On renvoie le router
+        router.post(`/:${ name }/edit`, auth.required, this.edit);
+        router.post(`/:${ name }/publish`, auth.required, this.publish);
+        router.delete(`/:${ name }/delete`, auth.required, this.delete);
+        router.post(`/:${ name }/comment`, auth.required, this.comment);
+        router.delete(`/:${ name }/:comment`, auth.required, this.uncomment);
+        router.post(`/:${ name }/like`, auth.required, this.like);
+        router.delete(`/:${ name }/:like`, auth.required, this.unlike);
         return router;
     }
 }
-
-// Définition du controleur de base
-module.exports = PublicationCtrl;

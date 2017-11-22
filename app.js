@@ -167,6 +167,7 @@ Event.on('new', function(newEvent) {
     if(err) {
       console.error(err);
     } else {
+      console.log(event);
       io.sockets.emit('new event', event);
     }
   });

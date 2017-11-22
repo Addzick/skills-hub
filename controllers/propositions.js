@@ -12,25 +12,7 @@ const PublicationCtrl = require('./publications');
 // Définition du controleur
 class PropositionCtrl extends PublicationCtrl {
     constructor(){
-        super('proposition');
-    }
-    
-    getQueryFromRequest() {
-        var query = super.getQueryFromRequest(req);        
-        if(typeof req.query.startAmount !== 'undefined' && typeof req.query.endAmount !== 'undefined') {
-            query.amount = { 
-                $gte: new Number(req.query.startAmount),
-                $lte: new Number(req.query.endAmount)
-            };
-        }
-        if(typeof req.query.validOnly !== 'undefined' ) {
-            query.validityStart = { $lte: Date.now() };
-            query.validityEnd = { $gte: Date.now() };
-        }    
-        if(typeof req.query.source !== 'undefined' ) {
-            query.source = { _id : mongoose.Types.ObjectId(req.query.source) };
-        }
-        return query;
+        super();
     }
 
     accept(req, res, next) {
@@ -108,23 +90,77 @@ class PropositionCtrl extends PublicationCtrl {
         }).catch(next);
     }
 
+    getQueryFromRequest(req) {
+        var query = super.getQueryFromRequest(req);        
+        if(typeof req.query.startAmount !== 'undefined' && typeof req.query.endAmount !== 'undefined') {
+            query.amount = { 
+                $gte: new Number(req.query.startAmount),
+                $lte: new Number(req.query.endAmount)
+            };
+        }
+        if(typeof req.query.validOnly !== 'undefined' ) {
+            query.validityStart = { $lte: Date.now() };
+            query.validityEnd = { $gte: Date.now() };
+        }    
+        if(typeof req.query.source !== 'undefined' ) {
+            query.source = { _id : mongoose.Types.ObjectId(req.query.source) };
+        }
+        return query;
+    }
+
+    preload(req, res, next) {
+        return super.preload(req, res, next,'proposition');
+    }
+
+    findOne(req, res, next) {
+        return super.findOne(req, res, next,'proposition');
+    }
+
+    findAll(req, res, next) {
+        return super.findAll(req, res, next,'proposition');
+    }
+
+    count(req, res, next) {
+        return super.count(req, res, next,'proposition');
+    }
+
+    create(req, res, next) {
+        return super.create(req, res, next,'proposition');
+    }
+
+    edit(req, res, next) {
+        return super.edit(req, res, next,'proposition');
+    }
+
+    publish(req, res, next) {
+        return super.publish(req, res, next,'proposition');
+    }
+
+    delete(req, res, next) {
+        return super.delete(req, res, next,'proposition');
+    }
+
+    comment(req, res, next) {
+        return super.comment(req, res, next,'proposition');
+    }
+
+    uncomment(req, res, next) {
+        return super.uncomment(req, res, next,'proposition');
+    }
+
+    like(req, res, next) {
+        return super.like(req, res, next,'proposition');
+    }
+
+    unlike(req, res, next) {
+        return super.unlike(req, res, next,'proposition');
+    }
+
     getRoutes() {
-        // On récupère le router
-        var router = super.getRoutes();
-
-        // POST : http://<url-site-web:port>/api/propositions/accept
-        // Accepte la proposition correspondante
+        var router = super.getRoutes('proposition');
         router.post('/:proposition/accept', auth.required, this.accept);
-
-        // POST : http://<url-site-web:port>/api/propositions/reject
-        // Rejette la proposition correspondante
         router.post('/:proposition/reject', auth.required, this.reject);
-
-        // POST : http://<url-site-web:port>/api/propositions/cancel
-        // Annule la proposition correspondante
         router.post('/:proposition/cancel', auth.required, this.cancel);
-
-        // On renvoie le router
         return router;
     }
 }

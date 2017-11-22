@@ -38,21 +38,21 @@ var RatingSchema = new mongoose.Schema({
 });
 
 // Définition des hooks
-RatingSchema.post('findOne', function(doc,next) { doc.autoload(); next(); });
-RatingSchema.post('find', function(docs,next) { 
-  for(i=0; i < docs.length; i++) {
-    docs[i].autoload();
-  }
-  next(); 
-});
-
-// Définition du traitement de population
-RatingSchema.methods.autoload = function() {
+RatingSchema.pre('findOne', function(next) { 
   this
   .populate('author')
   .populate('target')
   .populate('concern');
-};
+  next(); 
+});
+
+RatingSchema.pre('find', function(next) { 
+  this
+  .populate('author')
+  .populate('target')
+  .populate('concern');
+  next();
+});
 
 // Attribution du schéma au modèle de note
 module.exports = mongoose.model('rating', RatingSchema);

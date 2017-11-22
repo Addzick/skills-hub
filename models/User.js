@@ -57,16 +57,7 @@ var UserSchema = new mongoose.Schema({
 UserSchema.plugin(uniqueValidator, { message: 'is already taken.' });
 
 // Définition des hooks
-UserSchema.post('findOne', function(doc,next) { doc.autoload(); next(); });
-UserSchema.post('find', function(docs,next) { 
-  for(i=0; i < docs.length; i++) {
-    docs[i].autoload();
-  }
-  next(); 
-});
-
-// Définition du traitement de population
-UserSchema.methods.autoload = function() {
+UserSchema.pre('findOne', function(next) { 
   this
   .populate('address')
   .populate({
@@ -77,7 +68,22 @@ UserSchema.methods.autoload = function() {
         }
     }
   });
-};
+  next(); 
+});
+
+UserSchema.pre('find', function(next) { 
+  this
+  .populate('address')
+  .populate({
+    path: 'favorites',
+    options: {
+        sort: {
+            title: 'asc'
+        }
+    }
+  });
+  next();
+});
 
 // Définition de la méthode utilisée pour mettre à jour le mot de passe d'un utilisateur
 UserSchema.methods.setPassword = function(password){

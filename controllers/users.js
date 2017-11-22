@@ -216,38 +216,14 @@ class UserCtrl {
     }
 
     getRoutes() {
-        // On récupère le router
-        let router = require('express').Router();
-
-        // GET : http://<url-site-web:port>/api/account
-        // Renvoie la liste des utilisateurs recherchés
-        router.get('/account', this.get);
-
-        // POST : http://<url-site-web:port>/api/account
-        // Modifie le compte de l'utilisateur authentifié
-        router.post('/account', auth.required, this.edit);
-
-        // GET : http://<url-site-web:port>/api/account
-        // Renvoie la liste des utilisateurs recherchés
-        router.get('/users', this.findAll);
-
-        // GET : http://<url-site-web:port>/api/account
-        // Renvoie la liste des utilisateurs recherchés
-        router.get('/users/:username', this.findOne);
-
-        // POST : http://<url-site-web:port>/api/login
-        // Authentifie un utilisateur
-        router.post('/login', this.login);
-
-        // POST : http://<url-site-web:port>/api/register
-        // Enregistre un nouvel utilisateur
+        var router = require('express').Router();
         router.post('/register', this.register);
-
-        // DELETE : http://<url-site-web:port>/api/logout
-        // Deconnecte un utilisateur authentifié
+        router.post('/login', this.login);
         router.delete('/logout', this.logout);
-
-        // On renvoie le router
+        router.get('/account', this.get);
+        router.post('/account', auth.required, this.edit);
+        router.get('/users', this.findAll);
+        router.get('/users/:username', this.findOne);
         return router;
     }
 }

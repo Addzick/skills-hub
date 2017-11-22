@@ -51,22 +51,23 @@ var TenderSchema = new mongoose.Schema({
   });
 
 // Définition des hooks
-TenderSchema.post('findOne', function(doc,next) { doc.autoload(); next(); });
-TenderSchema.post('find', function(docs,next) { 
-  for(i=0; i < docs.length; i++) {
-    docs[i].autoload();
-  }
+TenderSchema.pre('findOne', function(next) { 
+  this
+  .populate('address')
+  .populate('author')
+  .populate('target')
+  .populate('category');
   next(); 
 });
 
-// Définition du traitement de population
-TenderSchema.methods.autoload = function() {
-    this
-    .populate('address')
-    .populate('author')
-    .populate('target')
-    .populate('category');
-};
+TenderSchema.pre('find', function(next) { 
+  this
+  .populate('address')
+  .populate('author')
+  .populate('target')
+  .populate('category');
+  next();
+});
 
 // Attribution du schéma au modèle d'appel d'offres
 module.exports = mongoose.model('tender', TenderSchema);

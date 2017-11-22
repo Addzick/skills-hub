@@ -44,20 +44,19 @@ var PropositionSchema =  new mongoose.Schema({
 });
 
 // Définition des hooks
-PropositionSchema.post('findOne', function(doc,next) { doc.autoload(); next(); });
-PropositionSchema.post('find', function(docs,next) { 
-  for(i=0; i < docs.length; i++) {
-    docs[i].autoload();
-  }
-  next(); 
-});
-
-// Définition du traitement de population
-PropositionSchema.methods.autoload = function() {
+PropositionSchema.pre('findOne', function(next) { 
   this
   .populate('author')
   .populate('source');
-};
+  next(); 
+});
+
+PropositionSchema.pre('find', function(next) { 
+  this
+  .populate('author')
+  .populate('source');
+  next();
+});
 
 // Attribution du schéma au modèle de proposition
 module.exports = mongoose.model('proposition', PropositionSchema);

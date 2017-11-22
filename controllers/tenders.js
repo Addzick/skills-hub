@@ -12,41 +12,7 @@ const PublicationCtrl = require('./publications');
 // Définition du controleur
 class TenderCtrl extends PublicationCtrl {
     constructor(){
-        super('tender');
-    }
-
-    getQueryFromRequest() {
-        var query = super.getQueryFromRequest(req);        
-        if(typeof req.query.startWorkDate !== 'undefined' && typeof req.query.endWorkDate !== 'undefined') {
-            query.workDate = { 
-                $gte: new ISODate(req.query.startWorkDate),
-                $lte: new ISODate(req.query.endWorkDate)
-            }
-        }
-        if(typeof req.query.canAcceptPrivateProps !== 'undefined' ) {
-            query.canAcceptPrivateProps = req.query.canAcceptPrivateProps
-        }
-        if(typeof req.query.validOnly !== 'undefined' ) {
-            query.validityStart = { $lte: Date.now() };
-            query.validityEnd = { $gte: Date.now() };
-        }    
-        if(typeof req.query.target !== 'undefined' ) {
-            query.target = { _id : mongoose.Types.ObjectId(req.query.target) };
-        }
-        if(typeof req.query.longitude !== 'undefined' && typeof req.query.longitude !== 'undefined') {
-            query.address.loc = { 
-                loc: { 
-                    $near : { 
-                        $geometry : { 
-                            type : "Point" ,
-                            coordinates : [ new Number(req.query.longitude) , new Number(req.query.latitude) ] 
-                        } ,
-                        $maxDistance : new Number(req.query.distance) || 50
-                    } 
-                } 
-            }
-        }
-        return query;
+        super();
     }
 
     cancel(req, res, next) {
@@ -99,19 +65,92 @@ class TenderCtrl extends PublicationCtrl {
         }).catch(next);
     }
 
+    getQueryFromRequest(req) {
+        var query = super.getQueryFromRequest(req);        
+        if(typeof req.query.startWorkDate !== 'undefined' && typeof req.query.endWorkDate !== 'undefined') {
+            query.workDate = { 
+                $gte: new ISODate(req.query.startWorkDate),
+                $lte: new ISODate(req.query.endWorkDate)
+            }
+        }
+        if(typeof req.query.canAcceptPrivateProps !== 'undefined' ) {
+            query.canAcceptPrivateProps = req.query.canAcceptPrivateProps
+        }
+        if(typeof req.query.validOnly !== 'undefined' ) {
+            query.validityStart = { $lte: Date.now() };
+            query.validityEnd = { $gte: Date.now() };
+        }    
+        if(typeof req.query.target !== 'undefined' ) {
+            query.target = { _id : mongoose.Types.ObjectId(req.query.target) };
+        }
+        if(typeof req.query.longitude !== 'undefined' && typeof req.query.longitude !== 'undefined') {
+            query.address.loc = { 
+                loc: { 
+                    $near : { 
+                        $geometry : { 
+                            type : "Point" ,
+                            coordinates : [ new Number(req.query.longitude) , new Number(req.query.latitude) ] 
+                        } ,
+                        $maxDistance : new Number(req.query.distance) || 50
+                    } 
+                } 
+            }
+        }
+        return query;
+    }
+
+    preload(req, res, next) {
+        return super.preload(req, res, next,'tender');
+    }
+
+    findOne(req, res, next) {
+        return super.findOne(req, res, next,'tender');
+    }
+
+    findAll(req, res, next) {
+        return super.findAll(req, res, next,'tender');
+    }
+
+    count(req, res, next) {
+        return super.count(req, res, next,'tender');
+    }
+
+    create(req, res, next) {
+        return super.create(req, res, next,'tender');
+    }
+
+    edit(req, res, next) {
+        return super.edit(req, res, next,'tender');
+    }
+
+    publish(req, res, next) {
+        return super.publish(req, res, next,'tender');
+    }
+
+    delete(req, res, next) {
+        return super.delete(req, res, next,'tender');
+    }
+
+    comment(req, res, next) {
+        return super.comment(req, res, next,'tender');
+    }
+
+    uncomment(req, res, next) {
+        return super.uncomment(req, res, next,'tender');
+    }
+
+    like(req, res, next) {
+        return super.like(req, res, next,'tender');
+    }
+
+    unlike(req, res, next) {
+        return super.unlike(req, res, next,'tender');
+    }
+
     getRoutes() {
-        // On récupère le router
-        var router = super.getRoutes();
-
-        // POST : http://<url-site-web:port>/api/tenders/accept
-        // Accepte le tender correspondante
+        var router = super.getRoutes('tender');
         router.post('/:tender/close', auth.required, this.close);
-
-        // POST : http://<url-site-web:port>/api/tenders/cancel
-        // Annule le tender correspondante
         router.post('/:tender/cancel', auth.required, this.cancel);
-
-        // On renvoie le router
         return router;
     }
 }
