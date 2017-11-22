@@ -5,16 +5,13 @@
   Description : Définit le controleur dédié à la gestion des ratings
 */
 
-import mongoose from 'mongoose';
-import PublicationCtrl  from './publications';
-
-// Récupération des modeles mongoose
-var Rating = mongoose.model('rating');
+const mongoose = require('mongoose');
+const PublicationCtrl = require('./publications');
 
 // Définition du controleur
-export class RatingCtrl extends PublicationCtrl {
+class RatingCtrl extends PublicationCtrl {
     constructor(){
-        super(Rating);
+        super('rating');
     }
 
     getQueryFromRequest(){
@@ -31,3 +28,5 @@ export class RatingCtrl extends PublicationCtrl {
         return query;
     }
 }
+
+module.exports = new RatingCtrl();

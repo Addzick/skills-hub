@@ -27,14 +27,19 @@ var LikeSchema =  new mongoose.Schema({
 });
 
 // Définition des hooks
-LikeSchema
-.pre('findOne', autoload)
-.pre('find', autoload);
+LikeSchema.post('findOne', function(doc,next) { doc.autoload(); next(); });
+LikeSchema.post('find', function(docs,next) { 
+  for(i=0; i < docs.length; i++) {
+    docs[i].autoload();
+  }
+  next(); 
+});
 
 // Définition du traitement de population
-LikeSchema.methods.autoload = function(next) {
-  this.populate('author').populate('source.item');
-  next();
+LikeSchema.methods.autoload = function() {
+  this
+  .populate('author')
+  .populate('source.item');
 };
 
 // Attribution du schéma au modèle de like

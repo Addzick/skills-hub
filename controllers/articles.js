@@ -4,17 +4,13 @@
   Date        : 26.10.2017
   Description : Définit le controleur dédié à la gestion des articles
 */
-
-import mongoose from 'mongoose';
-import PublicationCtrl  from './publications';
-
-// Récupération des modeles mongoose
-var Article = mongoose.model('article');
+var PublicationCtrl = require('./publications.js');
+var auth = require('../config/auth');
 
 // Définition du controleur
-export class ArticleCtrl extends PublicationCtrl {
+class ArticleCtrl extends PublicationCtrl {
     constructor(){
-        super(Article);
+        super('article');
     }
 
     getQueryFromRequest(){
@@ -27,12 +23,25 @@ export class ArticleCtrl extends PublicationCtrl {
     }
 
     getTags(req, res, next) {
-        Article
-        .find({})
+        this.Model.find({})
         .distinct('tags')
         .exec().then(function(tags) {
             // On renvoie la liste des tags
             return res.status(200).json(tags);
         }).catch(next);
     }
+
+    getRoutes() {
+        // On récupère le router
+        var router = super.getRoutes();
+
+        // GET : http://<url-site-web:port>/api/articles/tags/
+        // Renvoie la liste complète des tags de tous les articles postés
+        router.get('/tags', auth.optional, this.getTags);
+
+        // On renvoie le router
+        return router;
+    }
 }
+
+module.exports = new ArticleCtrl();

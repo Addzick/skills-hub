@@ -28,17 +28,20 @@ var CommentSchema = new mongoose.Schema({
 });
 
 // Définition des hooks
-CommentSchema
-.pre('findOne', autoload)
-.pre('find', autoload);
+CommentSchema.post('findOne', function(doc,next) { doc.autoload(); next(); });
+CommentSchema.post('find', function(docs,next) { 
+  for(i=0; i < docs.length; i++) {
+    docs[i].autoload();
+  }
+  next(); 
+});
 
 // Définition du traitement de population
-CommentSchema.methods.autoload = function(next) {
+CommentSchema.methods.autoload = function() {
   this
   .populate('author')
   .populate('source.item');
-  next();
 };
 
 // Attribution du schéma au modèle de commentaire
-mongoose.model('comment', CommentSchema);
+module.exports = mongoose.model('comment', CommentSchema);

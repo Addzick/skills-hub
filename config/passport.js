@@ -13,7 +13,7 @@ var mongoose = require('mongoose');
 var LocalStrategy = require('passport-local').Strategy;
 
 // Récupération du modèle Mongoose pour un utilisateur
-var User = mongoose.model('User');
+var User = mongoose.model('user');
 
 // Définition de la méthode de login
 passport.use('local-login', new LocalStrategy( { usernameField: 'user[email]', passwordField: 'user[password]', passReqToCallback: true }, function(req, email, password, done) {

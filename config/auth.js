@@ -9,7 +9,7 @@
 var jwt = require('express-jwt');
 
 // Récupération de la phrase scrète depuis le fichier de configuration
-var secret = require('../config').secret;
+var secret = require('./index').secret;
 
 // Définition de la fonction de récupération du token depuis l'entête HTTP
 function getTokenFromHeader(req){

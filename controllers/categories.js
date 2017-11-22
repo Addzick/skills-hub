@@ -6,19 +6,20 @@
 */
 
 // Importation des ressources externes
-import mongoose from 'mongoose';
-
-// Récupération de modeles mongoose
-var Category = mongoose.model('category');
+const mongoose = require('mongoose');
+const auth = require('../config/auth');
 
 // Définition du controleur
-export class CategoryCtrl {
+class CategoryCtrl {
 
-    constructor() {}
+    constructor() {
+        // Récupération de modeles mongoose
+        CategoryCtrl.Category = mongoose.model('category');
+    }
 
     findAll(req, res, next) {        
         // On renvoie le résultat après execution des requêtes
-        Category.find({}).then(function(categories){
+        return CategoryCtrl.Category.find({}).then(function(categories){
             if(!categories) return res.sendStatus(404);
             return res.status(200).json({ categories: categories });
         }).catch(next);
@@ -26,12 +27,28 @@ export class CategoryCtrl {
 
     findOne(req, res, next) {
         // On recherche la categorie correspondante
-        Category
+        return CategoryCtrl.Category
         .findOne({ _id: mongoose.Types.ObjectId(req.params.category)})
         .then(function(category){
             if(!category) { return res.sendStatus(404); }
             return res.status(200).json({ category: category });
         }).catch(next);
     }
+
+    getRoutes() {
+        // On récupère le router
+        let router = require('express').Router();
+        // GET : http://<url-site-web:port>/api/categories/
+        // Renvoie la liste des categories après pagination
+        router.get('/', auth.optional, this.findAll);
+
+        // GET : http://<url-site-web:port>/api/categories/:id
+        // Renvoie la categorie correspondante
+        router.get('/:category', auth.optional, this.findOne);
+
+        // On renvoie le router
+        return router;
+    }
 }
 
+module.exports = new CategoryCtrl();

@@ -6,16 +6,16 @@
 */
 
 // Importation des ressources externes
-import passport from 'passport';
-import mongoose from 'mongoose';
-
-// Récupération du modèle Mongoose correspondant à un utilisateur
-var User      = mongoose.model('user');
-var Event     = mongoose.model('event');
+const passport = require('passport');
+const mongoose = require('mongoose');
+const auth     = require('../config/auth');
+const User     = mongoose.model('user');
+const Event    = mongoose.model('event');
 
 // Définition du controleur
-export class UserCtrl {
-    constructor() {}
+class UserCtrl {
+    constructor() {
+    }
 
     register(req, res, next) {
         // On contrôle la présence d'un email
@@ -56,9 +56,9 @@ export class UserCtrl {
         // On tente d'authentifier l'utilisateur
         passport.authenticate('local-login', { session: false }, function(err, user, info) {
            // Si une erreur a été rencontrée, on la renvoie
-           if(err) { return res.status(422).json(err); }
+           if(err) { console.error(err); return res.status(422).json(err); }
            // Si aucun utilisateur n'existe, on renvoie une erreur
-           if(!user) { return res.status(422).json(info); }
+           if(!user) { console.info(info); return res.status(422).json(info); }
            // On crée un evenement
            return Event
            .newEvent('user_connected', user, { kind: 'user', item: user })
@@ -76,7 +76,7 @@ export class UserCtrl {
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }
             // On crée un evenement
-            Event
+            return Event
             .newEvent('user_disconnected', user, { kind: 'user', item: user })
             .then(function() {
                 return res.sendStatus(202);
@@ -93,7 +93,7 @@ export class UserCtrl {
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }
             // On crée un evenement
-            Event
+            return Event
             .newEvent('user_updated', user, { kind: 'user', item: user })
             .then(function() {
                 // On renvoie un statut OK avec l'utilisateur et le token
@@ -107,7 +107,7 @@ export class UserCtrl {
     
     get(req, res, next) {
         // On recherche l'utilisateur authentifié
-        User
+        return User
         .findOne({ _id: req.payload.id })
         .then(function(user) {
             // Aucun utilisateur, on renvoie un statut 401
@@ -119,7 +119,7 @@ export class UserCtrl {
 
     findOne(req, res, next) {
         // On recherche l'utilisateur authentifié
-        User
+        return User
         .findOne({ username: req.params.username })
         .then(function(user) {
             // Aucun utilisateur, on renvoie un statut 401
@@ -173,7 +173,7 @@ export class UserCtrl {
             opts.skip = Number((req.query.page - 1) * req.query.size);
         }
 
-        User
+        return User
         .find(query, {}, opts)
         .exec()
         .then(function(users) {
@@ -183,7 +183,7 @@ export class UserCtrl {
     }
 
     setSocketId(username, socketid) {
-        User
+        return User
         .findOneAndUpdate(
             { username: username },
             { connection: socketid }
@@ -200,7 +200,7 @@ export class UserCtrl {
     }
 
     unsetSocketId(username) {
-        User
+        return User
         .findOneAndUpdate(
             { username: username },
             { connection: '' }
@@ -214,4 +214,42 @@ export class UserCtrl {
             console.error(err);
         });
     }
+
+    getRoutes() {
+        // On récupère le router
+        let router = require('express').Router();
+
+        // GET : http://<url-site-web:port>/api/account
+        // Renvoie la liste des utilisateurs recherchés
+        router.get('/account', this.get);
+
+        // POST : http://<url-site-web:port>/api/account
+        // Modifie le compte de l'utilisateur authentifié
+        router.post('/account', auth.required, this.edit);
+
+        // GET : http://<url-site-web:port>/api/account
+        // Renvoie la liste des utilisateurs recherchés
+        router.get('/users', this.findAll);
+
+        // GET : http://<url-site-web:port>/api/account
+        // Renvoie la liste des utilisateurs recherchés
+        router.get('/users/:username', this.findOne);
+
+        // POST : http://<url-site-web:port>/api/login
+        // Authentifie un utilisateur
+        router.post('/login', this.login);
+
+        // POST : http://<url-site-web:port>/api/register
+        // Enregistre un nouvel utilisateur
+        router.post('/register', this.register);
+
+        // DELETE : http://<url-site-web:port>/api/logout
+        // Deconnecte un utilisateur authentifié
+        router.delete('/logout', this.logout);
+
+        // On renvoie le router
+        return router;
+    }
 }
+
+module.exports = new UserCtrl();

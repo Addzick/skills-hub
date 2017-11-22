@@ -31,16 +31,19 @@ var NotificationSchema =  new mongoose.Schema({
 });
 
 // Définition des hooks
-NotificationSchema
-.pre('findOne', autoload)
-.pre('find', autoload);
+NotificationSchema.post('findOne', function(doc,next) { doc.autoload(); next(); });
+NotificationSchema.post('find', function(docs,next) { 
+  for(i=0; i < docs.length; i++) {
+    docs[i].autoload();
+  }
+  next(); 
+});
 
 // Définition du traitement de population
-NotificationSchema.methods.autoload = function(next) {
+NotificationSchema.methods.autoload = function() {
   this
   .populate('target')
   .populate('source');
-  next();
 };
 
 // Attribution du schéma au modèle de notification

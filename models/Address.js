@@ -33,4 +33,4 @@ var AddressSchema = new mongoose.Schema({
 AddressSchema.index({ loc: "2dsphere" });
 
 // Attribution du schéma au modèle d'utilisateur
-mongoose.model('address', AddressSchema);
+module.exports = mongoose.model('address', AddressSchema);

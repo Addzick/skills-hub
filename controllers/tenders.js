@@ -5,16 +5,14 @@
   Description : Contient les méthodes de gestion des appels d'offres
 */
 
-import mongoose from 'mongoose';
-import PublicationCtrl  from './publications';
-
-// Récupération des modeles mongoose
-var Tender = mongoose.model('tender');
+const mongoose = require('mongoose');
+const auth = require('../config/auth');
+const PublicationCtrl = require('./publications');
 
 // Définition du controleur
-export class TenderCtrl extends PublicationCtrl {
+class TenderCtrl extends PublicationCtrl {
     constructor(){
-        super(Tender);
+        super('tender');
     }
 
     getQueryFromRequest() {
@@ -53,7 +51,7 @@ export class TenderCtrl extends PublicationCtrl {
 
     cancel(req, res, next) {
         // On recherche l'utilisateur authentifié
-        return User
+        return this.User
         .findById(req.payload.id)
         .then(function(user) {            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
@@ -63,11 +61,11 @@ export class TenderCtrl extends PublicationCtrl {
             // On contrôle que l'utilisateur soit bien l'auteur
             if(tender.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
             // On met à jour l'item            
-            return Tender
+            return this.Model
             .findOneAndUpdate({_id: tender._id }, { $set: { canceledAt: Date.now() }})
             .then(function() {
                 // On crée un evenement
-                return Event
+                return this.Event
                 .newEvent('tender_canceled', user, { kind: this.ModelName, item: tender }, {})
                 .then(function() {
                     return res.sendStatus(202);
@@ -78,7 +76,7 @@ export class TenderCtrl extends PublicationCtrl {
 
     close(req, res, next) {
         // On recherche l'utilisateur authentifié
-        return User
+        return this.User
         .findById(req.payload.id)
         .then(function(user) {            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
@@ -88,11 +86,11 @@ export class TenderCtrl extends PublicationCtrl {
             // On contrôle que l'utilisateur soit bien l'auteur
             if(tender.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
             // On met à jour l'item            
-            return Tender
+            return this.Model
             .findOneAndUpdate({_id: tender._id }, { $set: { closedAt: Date.now() }})
             .then(function() {
                 // On crée un evenement
-                return Event
+                return this.Event
                 .newEvent('tender_closed', user, { kind: this.ModelName, item: tender }, {})
                 .then(function() {
                     return res.sendStatus(202);
@@ -100,5 +98,23 @@ export class TenderCtrl extends PublicationCtrl {
             });
         }).catch(next);
     }
+
+    getRoutes() {
+        // On récupère le router
+        var router = super.getRoutes();
+
+        // POST : http://<url-site-web:port>/api/tenders/accept
+        // Accepte le tender correspondante
+        router.post('/:tender/close', auth.required, this.close);
+
+        // POST : http://<url-site-web:port>/api/tenders/cancel
+        // Annule le tender correspondante
+        router.post('/:tender/cancel', auth.required, this.cancel);
+
+        // On renvoie le router
+        return router;
+    }
 }
+
+module.exports = new TenderCtrl();
 

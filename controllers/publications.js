@@ -6,22 +6,19 @@
 */
 
 // Importation des ressources externes
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
+const auth = require('../config/auth');
 
-// Récupération de modeles mongoose
-var Comment = mongoose.model('comment');
-var Like = mongoose.model('like');
-var User = mongoose.model('user');
-var Event = mongoose.model('event');
+class PublicationCtrl {   
 
-// Définition du controleur de base
-export class PublicationCtrl  {
-    Model;
-    ModelName;
-
-    constructor(model){
-        this.Model = model;
-        this.ModelName = model.modelName.toLowerCase();
+    constructor(modelName) {
+        PublicationCtrl.ModelName = modelName;
+        PublicationCtrl.Model = mongoose.model(modelName);
+        PublicationCtrl.User = mongoose.model('user');
+        PublicationCtrl.Category = mongoose.model('category');
+        PublicationCtrl.Event = mongoose.model('event');
+        PublicationCtrl.Comment = mongoose.model('comment');
+        PublicationCtrl.Like = mongoose.model('like');
       }
 
     getQueryFromRequest(req) {
@@ -109,13 +106,13 @@ export class PublicationCtrl  {
 
     preload(req, res, next) {
         // On recherche l'appel d'offres correspondant
-        return this.Model
-        .findOne({ _id: mongoose.Types.ObjectId(req.params[this.ModelName]) })
+        return PublicationCtrl.Model
+        .findOne({ _id: mongoose.Types.ObjectId(req.params[PublicationCtrl.ModelName]) })
         .then(function(result) {
             // Si aucun item trouvé, on renvoie une erreur 404
-            if(!result) { console.log(`${ this.ModelName } not found`); return res.sendStatus(404); }
+            if(!result) { console.log(`${ PublicationCtrl.ModelName } not found`); return res.sendStatus(404); }
             // On remplit la requête avec l'item trouvé
-            req[this.ModelName] = result;
+            req[PublicationCtrl.ModelName] = result;
             // On continue l'execution
             return next();
         }).catch(next);
@@ -123,7 +120,7 @@ export class PublicationCtrl  {
 
     preloadCategory(req, res, next) {
         // On recherche la categorie correspondante
-        Category
+        return PublicationCtrl.Category
         .findOne({_id: mongoose.Types.ObjectId(req.params.category)})
         .then(function(category){
             // Si aucune catégorie trouvée, on renvoie une erreur 404
@@ -137,7 +134,7 @@ export class PublicationCtrl  {
 
     preloadComment(req, res, next) {
         // On recherche le commentaire correspondant
-        Comment
+        return PublicationCtrl.Comment
         .findOne({_id: mongoose.Types.ObjectId(req.params.comment)})
         .then(function(comment){
             // Si aucun commentaire trouvé, on renvoie une erreur 404
@@ -151,7 +148,7 @@ export class PublicationCtrl  {
 
     preloadLike(req, res, next) {
         // On recherche le like correspondant
-        Like
+        return PublicationCtrl.Like
         .findOne({_id: mongoose.Types.ObjectId(req.params.like)})
         .then(function(like) {
             // Si aucun like trouvé, on renvoie une erreur 404
@@ -165,9 +162,9 @@ export class PublicationCtrl  {
 
     findOne(req, res, next) {
         // On execute la requête de sélection et on renvoie le résultat
-        return this.Model
-        .findOne({_id: mongoose.Types.ObjectId(req.params[this.ModelName])})
-        .populate(this.getChildsFromRequest(req))
+        return PublicationCtrl.Model
+        .findOne({_id: mongoose.Types.ObjectId(req.params[PublicationCtrl.ModelName])})
+        .populate(PublicationCtrl.getChildsFromRequest(req))
         .exec()
         .then(function(item) {
             if (!item) { return res.sendStatus(404); }            
@@ -177,9 +174,9 @@ export class PublicationCtrl  {
 
     findAll(req, res, next) {
         // On renvoie le résultat après execution de la requête de sélection
-        return this.Model
-        .find(this.getQueryFromRequest(req), {}, this.getOptionsFromRequest(req))
-        .populate(this.getChildsFromRequest(req))
+        return PublicationCtrl.Model
+        .find(PublicationCtrl.getQueryFromRequest(req), {}, PublicationCtrl.getOptionsFromRequest(req))
+        .populate(PublicationCtrl.getChildsFromRequest(req))
         .exec().then(function(items) {
             // On contrôle le résultat
             if (!result) { return res.sendStatus(404); }
@@ -190,8 +187,8 @@ export class PublicationCtrl  {
 
     count(req, res, next) {
         // On compte et on renvoie le résultat du comptage
-        return this.Model
-        .count(this.getQueryFromRequest(req))
+        return PublicationCtrl.Model
+        .count(PublicationCtrl.getQueryFromRequest(req))
         .then(function(result) {
             // On contrôle le résultat
             if (!result) { return res.sendStatus(404); }
@@ -202,20 +199,20 @@ export class PublicationCtrl  {
 
     create(req, res, next) {
         // On recherche l'utilisateur authentifié
-        return User
+        return PublicationCtrl.User
         .findById(req.payload.id)
         .then(function(user) {
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }          
             // On crée l'item
-            var item = new this.Model(req.body[this.ModelName]);
+            var item = new PublicationCtrl.Model(req.body[this.ModelName]);
             // On définit l'auteur
             item.author = user;
             // On crée l'item
-            return this.Model.create(item).then(function(newItem) {
+            return PublicationCtrl.Model.create(item).then(function(newItem) {
                  // On crée un evenement
-                 return Event
-                 .newEvent(`${ this.ModelName }_created`, user, { kind: this.ModelName, item: newItem })
+                 return PublicationCtrl.Event
+                 .newEvent(`${ PublicationCtrl.ModelName }_created`, user, { kind: PublicationCtrl.ModelName, item: newItem })
                  .then(function() {
                     return res.sendStatus(202);
                  });
@@ -225,20 +222,20 @@ export class PublicationCtrl  {
 
     edit(req, res, next) {
         // On recherche l'utilisateur authentifié
-        return User
+        return PublicationCtrl.User
         .findById(req.payload.id)
         .then(function(user) {            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }
             // On contrôle que l'utilisateur soit bien l'auteur
-            if(req[this.ModelName].author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }            
+            if(req[PublicationCtrl.ModelName].author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }            
             // On met à jour l'item
-            return this.Model
-            .findOneAndUpdate({_id: item._id }, req.body[this.ModelName])
+            return PublicationCtrl.Model
+            .findOneAndUpdate({_id: item._id }, req.body[PublicationCtrl.ModelName])
             .then(function(newItem) {
                 // On crée un evenement
-                return Event
-                .newEvent(`${ this.ModelName }_updated`, user, { kind: this.ModelName, item: newItem })
+                return PublicationCtrl.Event
+                .newEvent(`${ PublicationCtrl.ModelName }_updated`, user, { kind: PublicationCtrl.ModelName, item: newItem })
                 .then(function() {
                     return res.sendStatus(202);
                  });
@@ -248,22 +245,22 @@ export class PublicationCtrl  {
 
     publish(req, res, next) {
         // On recherche l'utilisateur authentifié
-        return User
+        return PublicationCtrl.User
         .findById(req.payload.id)
         .then(function(user) {            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }
             // On récupére l'item préchargé
-            var item = req[this.ModelName];
+            var item = req[PublicationCtrl.ModelName];
             // On contrôle que l'utilisateur soit bien l'auteur
             if(req.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
             // On met à jour l'item            
-            return this.Model
+            return PublicationCtrl.Model
             .findOneAndUpdate({_id: item._id }, {$set: { publishedAt: Date.now() }})
             .then(function(newItem) {
                 // On crée un evenement
-                return Event
-                .newEvent(`${ this.ModelName }_published`, user, { kind: this.ModelName, item: newItem })
+                return PublicationCtrl.Event
+                .newEvent(`${ PublicationCtrl.ModelName }_published`, user, { kind: PublicationCtrl.ModelName, item: newItem })
                 .then(function() {
                     return res.sendStatus(202);
                  });
@@ -273,20 +270,20 @@ export class PublicationCtrl  {
 
     delete(req, res, next) {
         // On recherche l'utilisateur authentifié
-        return User
+        return PublicationCtrl.User
         .findById(req.payload.id)
         .then(function(user) {            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }
             // On contrôle que l'utilisateur soit bien l'auteur
-            if(req[this.ModelName].author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
+            if(req[PublicationCtrl.ModelName].author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
             // On supprime l'item
-            return this.Model
+            return PublicationCtrl.Model
             .findByIdAndRemove(article._id)
             .then(function(newItem) {
                 // On crée un evenement
-                return Event
-                .newEvent(`${ this.ModelName }_deleted`, user, { kind: this.ModelName, item: newItem })
+                return PublicationCtrl.Event
+                .newEvent(`${ PublicationCtrl.ModelName }_deleted`, user, { kind: PublicationCtrl.ModelName, item: newItem })
                 .then(function() {
                     return res.sendStatus(202);
                  });
@@ -296,26 +293,26 @@ export class PublicationCtrl  {
 
     comment(req, res, next) {
         // On recherche l'utilisateur authentifié
-        return User
+        return PublicationCtrl.User
         .findById(req.payload.id)
         .then(function(user) {
             // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
             if(!user) { return res.sendStatus(401); }            
             // On récupére la source du commentaire
-            var source = req[this.ModelName];
+            var source = req[PublicationCtrl.ModelName];
             // On crée un commentaire            
-            return Comment.create({ 
+            return PublicationCtrl.Comment.create({ 
                 body: req.body.comment.body, 
                 author: user,
-                source: { kind: this.ModelName, item: source }
+                source: { kind: PublicationCtrl.ModelName, item: source }
              }).then(function(comment) {                
                 // On ajoute le commentaire à la source
-                return this.Model
+                return PublicationCtrl.Model
                 .findOneAndUpdate({ _id: source._id }, { $push: { comments: comment }, $inc: { nbComments : 1 }})
                 .then(function() {
                     // On crée un evenement
-                    return Event
-                    .newEvent(`${ this.ModelName }_commented`, user, { kind: 'comment', item: comment })
+                    return PublicationCtrl.Event
+                    .newEvent(`${ PublicationCtrl.ModelName }_commented`, user, { kind: 'comment', item: comment })
                     .then(function() {
                         return res.sendStatus(202);
                     });
@@ -326,22 +323,22 @@ export class PublicationCtrl  {
 
     uncomment(req, res, next) {
         // On recherche l'utilisateur authentifié
-        return User
+        return PublicationCtrl.User
         .findById(req.payload.id)
         .then(function(user) {
             // Si aucun utilisateur n'a été trouvé, on renvoie un statut 401
             if(!user) { return res.sendStatus(401); }
             // On récupére la source préchargée
-            var source = req[this.ModelName];
+            var source = req[PublicationCtrl.ModelName];
             // On supprime le commentaire
-            return Comment.findByIdAndRemove(req.comment._id).then(function(comment) {
+            return PublicationCtrl.Comment.findByIdAndRemove(req.comment._id).then(function(comment) {
                 // On supprime le lien avec la source
-                return this.Model
+                return PublicationCtrl.Model
                 .findOneAndUpdate({ _id: source._id }, { $pull: { comments: comment }, $inc: { nbComments : -1 }})
                 .then(function() {
                     // On crée un evenement
-                    return Event
-                    .newEvent(`${ this.ModelName }_uncommented`, user, { kind: 'comment', item: comment })
+                    return PublicationCtrl.Event
+                    .newEvent(`${ PublicationCtrl.ModelName }_uncommented`, user, { kind: 'comment', item: comment })
                     .then(function() {
                         return res.sendStatus(202);
                     });
@@ -352,27 +349,27 @@ export class PublicationCtrl  {
 
     like(req, res, next) {
         // On recherche l'utilisateur authentifié
-        return User
+        return PublicationCtrl.User
         .findById(req.payload.id)
         .then(function(user) {
             // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
             if(!user) { return res.sendStatus(401); }            
             // On récupére la source du like
-            var source = req[this.ModelName];
+            var source = req[PublicationCtrl.ModelName];
             // On crée un like            
-            return Like
+            return PublicationCtrl.Like
             .create({ 
                 author: user,
-                source: { kind: this.ModelName, item: source }
+                source: { kind: PublicationCtrl.ModelName, item: source }
              })
              .then(function(like) {                
                 // On ajoute le like à la source
-                return this.Model
+                return PublicationCtrl.Model
                 .findOneAndUpdate({_id: source._id }, { $push: { likes: like }, $inc: { nbLikes : 1 } })
                 .then(function() {
                     // On crée un evenement
-                    return Event
-                    .newEvent(`${ this.ModelName }_liked`, user, { kind: 'like', item: like })
+                    return PublicationCtrl.Event
+                    .newEvent(`${ PublicationCtrl.ModelName }_liked`, user, { kind: 'like', item: like })
                     .then(function() {
                         return res.sendStatus(202);
                     });
@@ -383,23 +380,23 @@ export class PublicationCtrl  {
 
     unlike(req, res, next) {
         // On recherche l'utilisateur authentifié
-        return User
+        return PublicationCtrl.User
         .findById(req.payload.id)
         .then(function(user) {
             // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
             if(!user) { return res.sendStatus(401); }
             // On récupére la source préchargée
-            var source = req[this.ModelName];
+            var source = req[PublicationCtrl.ModelName];
             // On supprime le like
-            return Like
+            return PublicationCtrl.Like
             .findByIdAndRemove(req.like._id)
             .then(function(like) {
                 // On supprime le lien avec la source
-                return this.Model.findOneAndUpdate({ _id: source._id }, { $pull: { likes: like }, $inc: { nbLikes : -1 }})
+                return PublicationCtrl.Model.findOneAndUpdate({ _id: source._id }, { $pull: { likes: like }, $inc: { nbLikes : -1 }})
                 .then(function() {
                     // On crée un evenement
-                    Event
-                    .newEvent(`${ this.ModelName }_unliked`, user, { kind: 'like', item: like })
+                    PublicationCtrl.Event
+                    .newEvent(`${ PublicationCtrl.ModelName }_unliked`, user, { kind: 'like', item: like })
                     .then(function() {
                         return res.sendStatus(202);
                     });
@@ -407,4 +404,65 @@ export class PublicationCtrl  {
             });
         }).catch(next);
     }
+
+    getRoutes() {
+        // On récupère le router
+        let router = require('express').Router();
+
+        // On précharge l'article s'il est passé en paramètre
+        router.param(`${ PublicationCtrl.ModelName }`, this.preload);
+        router.param('comment', this.preloadComment);
+        router.param('like', this.preloadLike);
+        router.param('category', this.preloadCategory);
+
+        // GET : http://<url-site-web:port>/api/articles/
+        // Renvoie la liste des elements après pagination
+        router.get('/', auth.optional, this.findAll);
+
+        // GET : http://<url-site-web:port>/api/articles/
+        // Renvoie le nombre d'elements
+        router.get('/count', auth.optional, this.count);
+
+        // GET : http://<url-site-web:port>/api/articles/:id
+        // Renvoie l'article correspondant
+        router.get(`/:${ PublicationCtrl.ModelName }`, auth.optional, this.findOne);
+
+        // POST : http://<url-site-web:port>/api/articles/create
+        // Crée un article
+        router.post('/create', auth.required, this.create);
+
+        // POST : http://<url-site-web:port>/api/articles/edit
+        // Met à jour l'article correspondant
+        router.post(`/:${ PublicationCtrl.ModelName }/edit`, auth.required, this.edit);
+
+        // POST : http://<url-site-web:port>/api/articles/publish
+        // Publie l'article correspondant
+        router.post(`/:${ PublicationCtrl.ModelName }/publish`, auth.required, this.publish);
+
+        // POST : http://<url-site-web:port>/api/articles/:article
+        // Supprime un article existant
+        router.delete(`/:${ PublicationCtrl.ModelName }/delete`, auth.required, this.delete);
+
+        // POST : http://<url-site-web:port>/api/articles/:article/comments
+        // Ajout un nouveau commentaire à l'article correspondant
+        router.post(`/:${ PublicationCtrl.ModelName }/comment`, auth.required, this.comment);
+
+        // DELETE : http://<url-site-web:port>/api/articles/:article/comments
+        // Supprime un commentaire de l'article correspondant
+        router.delete(`/:${ PublicationCtrl.ModelName }/:comment`, auth.required, this.uncomment);
+
+        // POST : http://<url-site-web:port>/api/articles/:article/comments
+        // Ajout un nouveau like à l'article correspondant
+        router.post(`/:${ PublicationCtrl.ModelName }/like`, auth.required, this.like);
+
+        // DELETE : http://<url-site-web:port>/api/articles/:article/comments
+        // Supprime un like de l'article correspondant
+        router.delete(`/:${ PublicationCtrl.ModelName }/:like`, auth.required, this.unlike);
+
+        // On renvoie le router
+        return router;
+    }
 }
+
+// Définition du controleur de base
+module.exports = PublicationCtrl;

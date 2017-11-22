@@ -6,9 +6,9 @@
 */
 
 // Importation des ressources externes
-var mongoose = require('mongoose');
-var uniqueValidator = require('mongoose-unique-validator');
-var slug = require('slug');
+const mongoose = require('mongoose');
+const uniqueValidator = require('mongoose-unique-validator');
+const slug = require('slug');
 
 // Définition du schéma d'un article
 var ArticleSchema = new mongoose.Schema({
@@ -43,26 +43,28 @@ var ArticleSchema = new mongoose.Schema({
 ArticleSchema.plugin(uniqueValidator, { message: 'already exists' });
 
 // Définition des hooks
-ArticleSchema
-.pre('validate', slugify)
-.pre('findOne', autoload)
-.pre('find', autoload);
+ArticleSchema.pre('validate', function(next){ this.slugify(); next();});
+ArticleSchema.post('findOne', function(doc,next) { doc.autoload(); next(); });
+ArticleSchema.post('find', function(docs,next) { 
+  for(i=0; i < docs.length; i++) {
+    docs[i].autoload();
+  }
+  next(); 
+});
 
 // Définition du traitement de "slugification"
-ArticleSchema.methods.slugify = function(next) {
+ArticleSchema.methods.slugify = function() {
   if(!this.slug)  {
     this.slug = slug(this.title) + '-' + (Math.random() * Math.pow(36, 6) | 0).toString(36);
   }
-  next();
 };
 
 // Définition du traitement de population
-ArticleSchema.methods.autoload = function(next) {
+ArticleSchema.methods.autoload = function() {
   this
   .populate('author')
   .populate('category');
-  next();
 };
 
 // Attribution du schéma au modèle d'article
-mongoose.model('article', ArticleSchema);
+module.exports = mongoose.model('article', ArticleSchema);

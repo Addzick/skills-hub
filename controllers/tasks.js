@@ -5,16 +5,14 @@
   Description : Définit le controleur dédié à la gestion des tâches
 */
 
-import mongoose from 'mongoose';
-import PublicationCtrl  from './publications';
-
-// Récupération des modeles mongoose
-var Task = mongoose.model('task');
+const mongoose = require('mongoose');
+const auth = require('../config/auth');
+const PublicationCtrl = require('./publications');
 
 // Définition du controleur
-export class TaskCtrl extends PublicationCtrl {
+class TaskCtrl extends PublicationCtrl {
     constructor(){
-        super(Task);
+        super('task');
     }
 
     getQueryFromRequest(){
@@ -45,7 +43,7 @@ export class TaskCtrl extends PublicationCtrl {
 
     confirm(req, res, next) {
         // On recherche l'utilisateur authentifié
-        return User
+        return this.User
         .findById(req.payload.id)
         .then(function(user) {            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
@@ -55,11 +53,11 @@ export class TaskCtrl extends PublicationCtrl {
             // On contrôle que l'utilisateur soit bien l'auteur
             if(task.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
             // On met à jour la task
-            return Task
+            return this.Model
             .findOneAndUpdate({_id: task._id }, { $set: { confirmedAt: Date.now() }})
             .then(function() {
                 // On crée un evenement
-                return Event
+                return this.Event
                 .newEvent('task_confirmed', user, { kind: 'task', item: task })
                 .then(function() {
                     return res.sendStatus(202);
@@ -70,7 +68,7 @@ export class TaskCtrl extends PublicationCtrl {
 
     pay(req, res, next) {
         // On recherche l'utilisateur authentifié
-        return User
+        return this.User
         .findById(req.payload.id)
         .then(function(user) {            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
@@ -80,11 +78,11 @@ export class TaskCtrl extends PublicationCtrl {
             // On contrôle que l'utilisateur soit bien l'auteur
             if(task.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
             // On met à jour la task
-            return Task
+            return this.Model
             .findOneAndUpdate({_id: task._id }, { $set: { paidAt: Date.now() }})
             .then(function() {
                 // On crée un evenement
-                return Event
+                return this.Event
                 .newEvent('task_paid', user, { kind: 'task', item: task })
                 .then(function() {
                     return res.sendStatus(202);
@@ -95,7 +93,7 @@ export class TaskCtrl extends PublicationCtrl {
 
     cancel(req, res, next) {
         // On recherche l'utilisateur authentifié
-        return User
+        return this.User
         .findById(req.payload.id)
         .then(function(user) {            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
@@ -105,11 +103,11 @@ export class TaskCtrl extends PublicationCtrl {
             // On contrôle que l'utilisateur soit bien l'auteur
             if(task.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
             // On met à jour l'item            
-            return Task
+            return this.Model
             .findOneAndUpdate({_id: task._id }, { $set: { canceledAt: Date.now() }})
             .then(function() {
                 // On crée un evenement
-                return Event
+                return this.Event
                 .newEvent('task_canceled', user, { kind: 'task', item: task }, {})
                 .then(function() {
                     return res.sendStatus(202);
@@ -117,4 +115,26 @@ export class TaskCtrl extends PublicationCtrl {
             });
         }).catch(next);
     }
+
+    getRoutes() {
+        // On récupère le router
+        var router = super.getRoutes();
+
+        // POST : http://<url-site-web:port>/api/propositions/accept
+        // Accepte la task correspondante
+        router.post('/:task/confirm', auth.required, this.confirm);
+
+        // POST : http://<url-site-web:port>/api/propositions/reject
+        // Rejette la task correspondante
+        router.post('/:task/pay', auth.required, this.pay);
+
+        // POST : http://<url-site-web:port>/api/propositions/cancel
+        // Annule la task correspondante
+        router.post('/:task/cancel', auth.required, this.cancel);
+
+        // On renvoie le router
+        return router;
+    }
 }
+
+module.exports = new TaskCtrl();

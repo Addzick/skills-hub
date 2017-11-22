@@ -28,17 +28,20 @@ var EventSchema =  new mongoose.Schema({
 });
 
 // Définition des hooks
-EventSchema
-.pre('findOne', autoload)
-.pre('find', autoload)
-.post('save',function(event, next) { this.db.model('Event').emit('new', event); next(); });
+EventSchema.post('save',function(doc, next) { this.db.model('event').emit('new', doc); next(); });
+EventSchema.post('findOne', function(doc,next) { doc.autoload(); next(); });
+EventSchema.post('find', function(docs,next) { 
+  for(i=0; i < docs.length; i++) {
+    docs[i].autoload();
+  }
+  next(); 
+});
 
 // Définition du traitement de population
-EventSchema.methods.autoload = function(next) {
+EventSchema.methods.autoload = function() {
   this
   .populate('author')
   .populate('source.item');
-  next();
 };
 
 // Définition de la méthode de création

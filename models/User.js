@@ -6,10 +6,10 @@
 */
 
 // Importation des ressources externes
-import mongoose from 'mongoose';
-import uniqueValidator  from 'mongoose-unique-validator';
-import crypto from 'crypto';
-import jwt from 'jsonwebtoken';
+const mongoose = require('mongoose');
+const uniqueValidator  = require('mongoose-unique-validator');
+const crypto =require('crypto');
+const jwt = require('jsonwebtoken');
 
 // Récupération de la phrase secrète depuis le fichier de configuration
 var secret = require('../config').secret;
@@ -57,12 +57,16 @@ var UserSchema = new mongoose.Schema({
 UserSchema.plugin(uniqueValidator, { message: 'is already taken.' });
 
 // Définition des hooks
-UserSchema
-.pre('findOne', autoload)
-.pre('find', autoload);
+UserSchema.post('findOne', function(doc,next) { doc.autoload(); next(); });
+UserSchema.post('find', function(docs,next) { 
+  for(i=0; i < docs.length; i++) {
+    docs[i].autoload();
+  }
+  next(); 
+});
 
 // Définition du traitement de population
-UserSchema.methods.autoload = function(next) {
+UserSchema.methods.autoload = function() {
   this
   .populate('address')
   .populate({
@@ -73,7 +77,6 @@ UserSchema.methods.autoload = function(next) {
         }
     }
   });
-  next();
 };
 
 // Définition de la méthode utilisée pour mettre à jour le mot de passe d'un utilisateur
@@ -110,4 +113,4 @@ UserSchema.methods.generateJWT = function() {
 };
 
 // Attribution du schéma au modèle d'utilisateur
-mongoose.model('user', UserSchema);
+module.exports = mongoose.model('user', UserSchema);

@@ -25,6 +25,7 @@ var mongoose = require('mongoose');
 var config = require('./config/index');
 
 // Récupération des modèles Mongoose utilisés par l'application
+var Address = require('./models/Address');
 var Article = require('./models/Article');
 var Category = require('./models/Category');
 var Comment = require('./models/Comment');
