@@ -40,7 +40,7 @@ EventSchema.pre('find', function(next) {
   .populate('source.item');
   next();
 });
-EventSchema.post('save',function(doc, next) { 
+EventSchema.post('save',function(doc, next) {   
   this.db.model('event').emit('new', doc); 
   next(); 
 });

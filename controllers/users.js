@@ -11,6 +11,7 @@ const mongoose = require('mongoose');
 const auth     = require('../config/auth');
 const User     = mongoose.model('user');
 const Event    = mongoose.model('event');
+const Address    = mongoose.model('address');
 
 // Définition du controleur
 class UserCtrl {
@@ -31,6 +32,7 @@ class UserCtrl {
         // On met à jour le nom d'utilisateur et le mot de passe
         user.username = req.body.user.email;
         user.setPassword(req.body.user.password);
+        
         // On sauve le nouvel utilisateur
         return user
         .save()
@@ -85,10 +87,12 @@ class UserCtrl {
         }).catch(next);
     }
 
-    edit(req, res, next) {
+    editAccount(req, res, next) {
         // On recherche l'utilisateur authentifié
         return User
-        .findByIdAndUpdate(req.payload.id, req.body.user)
+        .findByIdAndUpdate(req.payload.id, { 
+            $set: req.body.user
+        }, { new: true, upsert: true })
         .then(function(user) {
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }
@@ -98,10 +102,46 @@ class UserCtrl {
             .then(function() {
                 // On renvoie un statut OK avec l'utilisateur et le token
                 return res.status(200).json({ 
-                    token: newUser.generateJWT(),
-                    user: newUser
+                    token: user.generateJWT(),
+                    user: user
                 });
             });
+        }).catch(next);
+    }
+
+    editAddress(req, res, next) {
+        // On recherche l'utilisateur authentifié
+        return User
+        .findById(req.payload.id)
+        .then(function(user) {
+            // Si aucun utilisateur trouvé, on renvoie un statut 401
+            if (!user) { return res.sendStatus(401); }            
+            // On sauve la nouvelle addresse
+            var address = req.body.address;
+            return Address
+            .findOneAndUpdate({ 
+                'loc.coordinates': address.loc.coordinates
+            }, address, { new: true, upsert:true })
+            .then(function(addr){
+                // On contrôle l'adresse
+                if(!addr) { return res.sendStatus(422); }
+                // On ajoute l'adresse à l'utilisateur
+                user.address = addr;
+                return user.save().then(function(newUser) {
+                    // On crée un evenement
+                    return Event
+                    .newEvent('user_updated', user, { kind: 'user', item: newUser })
+                    .then(function() {
+                        // On renvoie un statut OK avec l'utilisateur et le token
+                        return res.status(200).json({ 
+                            token: newUser.generateJWT(),
+                            user: newUser
+                        });
+                    });
+                })
+                
+            });
+            
         }).catch(next);
     }
     
@@ -150,20 +190,20 @@ class UserCtrl {
                 $lte: new Number(req.query.endStars)
             };
         }
-        if(typeof req.query.longitude !== 'undefined' && typeof req.query.longitude !== 'undefined') {
+        if(typeof req.query.localisation !== 'undefined') {
             query.address.loc = { 
                 loc: { 
                     $near : { 
                         $geometry : { 
                             type : "Point" ,
-                            coordinates : [ new Number(req.query.longitude) , new Number(req.query.latitude) ] 
+                            coordinates : [ new Number(req.query.localisation.longitude) , new Number(req.localisation.latitude) ] 
                         } ,
-                        $maxDistance : new Number(req.query.distance) || 50
+                        $maxDistance : new Number(req.query.localisation.distance) || 50
                     } 
                 } 
             }
         }        
-        if(typeof req.query.sort !== 'undefined') {
+        if(typeof req.query.paginate !== 'undefined') {
             opts.sort = req.query.sort;
         }      
         if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
@@ -203,7 +243,8 @@ class UserCtrl {
         return User
         .findOneAndUpdate(
             { username: username },
-            { connection: '' }
+            { $set: {connection: '' }},
+            { new: true }
         ).then(function(user) {
             if(user) {
                 console.log(`Removed socket id to user ==> ${ user.username }`);
@@ -219,11 +260,12 @@ class UserCtrl {
         var router = require('express').Router();
         router.post('/register', this.register);
         router.post('/login', this.login);
-        router.delete('/logout', this.logout);
-        router.get('/account', this.get);
-        router.post('/account', auth.required, this.edit);
-        router.get('/users', this.findAll);
-        router.get('/users/:username', this.findOne);
+        router.delete('/logout', auth.required, this.logout);
+        router.get('/account', auth.required, this.get);
+        router.post('/account', auth.required, this.editAccount);
+        router.put('/account', auth.required, this.editAddress);
+        router.get('/users', auth.optional,this.findAll);
+        router.get('/users/:username', auth.optional,this.findOne);
         return router;
     }
 }

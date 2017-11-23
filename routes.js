@@ -16,11 +16,13 @@ const ratings       = require('./controllers/ratings');
 const tasks         = require('./controllers/tasks');
 const tenders       = require('./controllers/tenders');
 const users         = require('./controllers/users');
+const events         = require('./controllers/events');
 
 // Définition de l'URL pour l'api
 router.use('/api', users.getRoutes());
 router.use('/api/articles', articles.getRoutes());
 router.use('/api/categories', categories.getRoutes());
+router.use('/api/events', events.getRoutes());
 router.use('/api/propositions', propositions.getRoutes());
 router.use('/api/ratings', ratings.getRoutes());
 router.use('/api/tasks', tasks.getRoutes());

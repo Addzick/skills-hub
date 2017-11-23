@@ -79,7 +79,7 @@ module.exports = class PublicationCtrl {
         
         if(typeof req.query.childs.path !== 'undefined') {
             childs = {
-                path: req.query.path,
+                path: req.query.childs.path,
                 options : {
                     skip: 0,
                     limit: 20
@@ -203,7 +203,7 @@ module.exports = class PublicationCtrl {
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }          
             // On crée l'item
-            let model = mongoose.model(name)
+            var model = mongoose.model(name)
             var item = new model(req.body[name]);
             // On définit l'auteur
             item.author = user;
@@ -213,7 +213,9 @@ module.exports = class PublicationCtrl {
                  return Event
                  .newEvent(`${ name }_created`, user, { kind: name, item: newItem })
                  .then(function() {
-                    return res.sendStatus(202);
+                     var result = {};
+                     result[name] = newItem;
+                     return res.status(200).json(result);
                  });
             });
         }).catch(next);
@@ -230,13 +232,15 @@ module.exports = class PublicationCtrl {
             if(req[name].author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }            
             // On met à jour l'item
             return mongoose.model(name)
-            .findOneAndUpdate({_id: item._id }, req.body[name])
+            .findOneAndUpdate({_id: item._id }, { $set: req.body[name] }, { new: true })
             .then(function(newItem) {
                 // On crée un evenement
                 return Event
                 .newEvent(`${ name }_updated`, user, { kind: name, item: newItem })
                 .then(function() {
-                    return res.sendStatus(202);
+                    var result = {};
+                    result[name] = newItem;
+                    return res.status(200).json(result);
                  });
             });
         }).catch(next);
@@ -261,7 +265,9 @@ module.exports = class PublicationCtrl {
                 return Event
                 .newEvent(`${ name }_published`, user, { kind: name, item: newItem })
                 .then(function() {
-                    return res.sendStatus(202);
+                    var result = {};
+                    result[name] = newItem;
+                    return res.status(200).json(result);
                  });
             });
         }).catch(next);
@@ -279,10 +285,10 @@ module.exports = class PublicationCtrl {
             // On supprime l'item
             return mongoose.model(name)
             .findByIdAndRemove(article._id)
-            .then(function(newItem) {
+            .then(function(itemDeleted) {
                 // On crée un evenement
                 return Event
-                .newEvent(`${ name }_deleted`, user, { kind: name, item: newItem })
+                .newEvent(`${ name }_deleted`, user, { kind: name, item: itemDeleted })
                 .then(function() {
                     return res.sendStatus(202);
                  });
@@ -313,7 +319,7 @@ module.exports = class PublicationCtrl {
                     return Event
                     .newEvent(`${ name }_commented`, user, { kind: 'comment', item: comment })
                     .then(function() {
-                        return res.sendStatus(202);
+                        return res.status(200).json({ comment: comment });
                     });
                 });
             });
@@ -370,7 +376,7 @@ module.exports = class PublicationCtrl {
                     return Event
                     .newEvent(`${ name }_liked`, user, { kind: 'like', item: like })
                     .then(function() {
-                        return res.sendStatus(202);
+                        return res.status(200).json({ like: like });
                     });
                 });
             });

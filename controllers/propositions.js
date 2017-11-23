@@ -34,7 +34,7 @@ class PropositionCtrl extends PublicationCtrl {
                 return this.Event
                 .newEvent('proposition_accepted', user, { kind: 'proposition', item: prop })
                 .then(function() {
-                    return res.sendStatus(202);
+                    return res.status(200).json({ proposition: prop });
                  });
             });
         }).catch(next);
@@ -59,7 +59,7 @@ class PropositionCtrl extends PublicationCtrl {
                 return Event
                 .newEvent('proposition_rejected', user, { kind: 'proposition', item: prop })
                 .then(function() {
-                    return res.sendStatus(202);
+                    return res.status(200).json({ proposition: prop });
                  });
             });
         }).catch(next);
@@ -84,7 +84,7 @@ class PropositionCtrl extends PublicationCtrl {
                 return this.Event
                 .newEvent('proposition_canceled', user, { kind: 'proposition', item: prop }, {})
                 .then(function() {
-                    return res.sendStatus(202);
+                    return res.status(200).json({ proposition: prop });
                  });
             });
         }).catch(next);

@@ -34,7 +34,7 @@ class TaskCtrl extends PublicationCtrl {
                 return this.Event
                 .newEvent('task_confirmed', user, { kind: 'task', item: task })
                 .then(function() {
-                    return res.sendStatus(202);
+                    return res.status(200).json({ task: task });
                  });
             });
         }).catch(next);
@@ -59,7 +59,7 @@ class TaskCtrl extends PublicationCtrl {
                 return this.Event
                 .newEvent('task_paid', user, { kind: 'task', item: task })
                 .then(function() {
-                    return res.sendStatus(202);
+                    return res.status(200).json({ task: task });
                  });
             });
         }).catch(next);
@@ -84,7 +84,7 @@ class TaskCtrl extends PublicationCtrl {
                 return this.Event
                 .newEvent('task_canceled', user, { kind: 'task', item: task }, {})
                 .then(function() {
-                    return res.sendStatus(202);
+                    return res.status(200).json({ task: task });
                  });
             });
         }).catch(next);

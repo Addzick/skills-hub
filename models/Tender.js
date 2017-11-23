@@ -7,8 +7,6 @@
 
 // Importation des ressources externes
 var mongoose = require('mongoose');
-var Event = require('./Event');
-var User = require('./User');
 
 // Définition du schéma d'un appel d'offres
 var TenderSchema = new mongoose.Schema({

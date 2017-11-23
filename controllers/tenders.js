@@ -9,6 +9,7 @@ const mongoose = require('mongoose');
 const auth = require('../config/auth');
 const PublicationCtrl = require('./publications');
 
+
 // Définition du controleur
 class TenderCtrl extends PublicationCtrl {
     constructor(){
@@ -34,7 +35,7 @@ class TenderCtrl extends PublicationCtrl {
                 return this.Event
                 .newEvent('tender_canceled', user, { kind: this.ModelName, item: tender }, {})
                 .then(function() {
-                    return res.sendStatus(202);
+                    return res.status(200).json({ tender: tender });
                  });
             });
         }).catch(next);
@@ -59,7 +60,7 @@ class TenderCtrl extends PublicationCtrl {
                 return this.Event
                 .newEvent('tender_closed', user, { kind: this.ModelName, item: tender }, {})
                 .then(function() {
-                    return res.sendStatus(202);
+                    return res.status(200).json({ tender: tender });
                  });
             });
         }).catch(next);
@@ -83,15 +84,15 @@ class TenderCtrl extends PublicationCtrl {
         if(typeof req.query.target !== 'undefined' ) {
             query.target = { _id : mongoose.Types.ObjectId(req.query.target) };
         }
-        if(typeof req.query.longitude !== 'undefined' && typeof req.query.longitude !== 'undefined') {
+        if(typeof req.query.localisation !== 'undefined') {
             query.address.loc = { 
                 loc: { 
                     $near : { 
                         $geometry : { 
                             type : "Point" ,
-                            coordinates : [ new Number(req.query.longitude) , new Number(req.query.latitude) ] 
+                            coordinates : [ new Number(req.query.localisation.longitude) , new Number(req.localisation.latitude) ] 
                         } ,
-                        $maxDistance : new Number(req.query.distance) || 50
+                        $maxDistance : new Number(req.query.localisation.distance) || 50
                     } 
                 } 
             }
@@ -121,6 +122,38 @@ class TenderCtrl extends PublicationCtrl {
 
     edit(req, res, next) {
         return super.edit(req, res, next,'tender');
+    }
+
+    editAddress(req, res, next) {
+        // On recherche l'utilisateur authentifié
+        return User
+        .findById(req.payload.id)
+        .then(function(user) {
+            // Si aucun utilisateur trouvé, on renvoie un statut 401
+            if (!user) { return res.sendStatus(401); }            
+            // On sauve la nouvelle addresse
+            var address = req.body.address;
+            return Address
+            .findOneAndUpdate({ 
+                'loc.coordinates': address.loc.coordinates
+            }, address, { new: true, upsert:true })
+            .then(function(addr){
+                // On contrôle l'adresse
+                if(!addr) { return res.sendStatus(422); }
+                // On ajoute l'adresse à l'appel d'offres
+                return mongoose.model(name)
+                .findOneAndUpdate({_id: req.tender._id }, { $set: { address:addr }}, { new: true })
+                then(function(newTender) {
+                    // On crée un evenement
+                    return Event
+                    .newEvent('tender_updated', user, { kind: 'tender', item: newTender })
+                    .then(function() {
+                        // On renvoie un statut OK avec l'utilisateur et le token
+                        return res.sendStatus(202);
+                    });
+                });
+            });
+        }).catch(next);
     }
 
     publish(req, res, next) {

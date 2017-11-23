@@ -1,0 +1,88 @@
+/*
+  Fichier     : controllers/events.js
+  Auteur      : Youness FATH
+  Date        : 26.10.2017
+  Description : Définit le controleur de gestion des events
+*/
+
+// Importation des ressources externes
+const mongoose = require('mongoose');
+const auth = require('../config/auth');
+const Event = mongoose.model('event');
+
+// Définition du controleur
+class CategoryCtrl {
+
+    constructor() {
+    }
+
+    findAll(req, res, next) {
+
+        var query = {};
+        var opts = { skip: 0, limit: 20, sort: { updatedAt: 'desc' } };
+        
+        if(typeof req.query.types !== 'undefined') {
+            query.type = { $in : req.query.types };
+        }
+        
+        if(typeof req.query.startDate !== 'undefined' && typeof req.query.endDate !== 'undefined') {
+            query.updatedAt = { 
+                $gte: new ISODate(req.query.startDate),
+                $lte: new ISODate(req.query.endDate)
+            }
+        }
+
+        if(typeof req.query.authors !== 'undefined') {
+            query.author._id = { $in : req.query.authors };
+        }
+
+        if(typeof req.query.localisation !== 'undefined') {
+            query.source.kind = 'tender';
+            query.source.item.address.loc = { 
+                loc: { 
+                    $near : { 
+                        $geometry : { 
+                            type : "Point" ,
+                            coordinates : [ new Number(req.query.localisation.longitude) , new Number(req.localisation.latitude) ] 
+                        } ,
+                        $maxDistance : new Number(req.query.localisation.distance) || 50
+                    } 
+                } 
+            }
+        }        
+                
+        if(typeof req.query.paginate !== 'undefined') {
+            opts.sort = req.query.sort;
+        }      
+        if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
+            opts.limit = Number(req.query.size);
+        }
+        if(typeof req.query.page !== 'undefined' && req.query.page >= 1) {
+            opts.skip = Number((req.query.page - 1) * req.query.size);
+        }
+        
+        return Event.find(query, {}, opts).then(function(events){
+            if(!events) return res.sendStatus(404);
+            return res.status(200).json({ events: events });
+        }).catch(next);
+    }
+
+    findOne(req, res, next) {
+        // On recherche l'évènement correspondant
+        return Event
+        .findOne({ _id: mongoose.Types.ObjectId(req.params.event)})
+        .then(function(event){
+            if(!event) { return res.sendStatus(404); }
+            return res.status(200).json({ event: event });
+        }).catch(next);
+    }
+
+    getRoutes() {
+        var router = require('express').Router();
+        router.get('/', auth.optional, this.findAll);
+        router.get('/:event', auth.optional, this.findOne);
+        return router;
+    }
+}
+
+module.exports = new CategoryCtrl();

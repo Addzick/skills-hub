@@ -161,16 +161,11 @@ io.sockets.on('connection', function(socket) {
 });
 
 // On met en place un broadcast sur chaque nouvel evenement
-Event.on('new', function(newEvent) {  
+Event.on('new', function(newEvent, next) {  
   // On renvoie l'evenement avec ces sous-documents
-  Event.findById(newEvent._id).populate('user').populate('source.item').populate('root.item').exec(function(err, event) {
-    if(err) {
-      console.error(err);
-    } else {
-      console.log(event);
-      io.sockets.emit('new event', event);
-    }
-  });
+  Event
+  .findOne({ _id: newEvent._id})
+  .then(function(event) { io.sockets.emit('new event', event); }).catch(next);
 });
 
 // Démarrage du serveur

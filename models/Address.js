@@ -14,7 +14,7 @@ var AddressSchema = new mongoose.Schema({
     complement: String,
     zip: String,
     city: String,
-    loc : { type: String, coordinates: [Number] },
+    loc : { type: { type: String }, coordinates: [Number] },
 }, {
   timestamps: true,
   toObject: {
