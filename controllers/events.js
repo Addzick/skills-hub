@@ -11,7 +11,7 @@ const auth = require('../config/auth');
 const Event = mongoose.model('event');
 
 // Définition du controleur
-class CategoryCtrl {
+class EventCtrl {
 
     constructor() {
     }
@@ -20,9 +20,8 @@ class CategoryCtrl {
 
         var query = {};
         var opts = { skip: 0, limit: 20, sort: { updatedAt: 'desc' } };
-        
         if(typeof req.query.types !== 'undefined') {
-            query.type = { $in : req.query.types };
+            query.type = { '$in' : req.query.types };
         }
         
         if(typeof req.query.startDate !== 'undefined' && typeof req.query.endDate !== 'undefined') {
@@ -31,7 +30,7 @@ class CategoryCtrl {
                 $lte: new ISODate(req.query.endDate)
             }
         }
-
+        
         if(typeof req.query.authors !== 'undefined') {
             query.author._id = { $in : req.query.authors };
         }
@@ -60,9 +59,9 @@ class CategoryCtrl {
         if(typeof req.query.page !== 'undefined' && req.query.page >= 1) {
             opts.skip = Number((req.query.page - 1) * req.query.size);
         }
-        
+        console.log(query);
         return Event.find(query, {}, opts).then(function(events){
-            if(!events) return res.sendStatus(404);
+            if(!events) return res.sendStatus(404);            
             return res.status(200).json({ events: events });
         }).catch(next);
     }
@@ -85,4 +84,4 @@ class CategoryCtrl {
     }
 }
 
-module.exports = new CategoryCtrl();
+module.exports = new EventCtrl();
