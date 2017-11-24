@@ -31,8 +31,8 @@ class EventCtrl {
             }
         }
         
-        if(typeof req.query.authors !== 'undefined') {
-            query.author._id = { $in : req.query.authors };
+        if(typeof req.query.author !== 'undefined') {
+            query.author = { _id: mongoose.Types.ObjectId(req.query.author) };
         }
 
         if(typeof req.query.localisation !== 'undefined') {
