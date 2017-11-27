@@ -410,6 +410,10 @@ module.exports = class PublicationCtrl {
         }).catch(next);
     }
 
+    getDummy(req, res, next){
+        return {};
+    }
+
     getRoutes(name) {
         var router = require('express').Router();
         router.param(`${ name }`, this.preload);
@@ -429,4 +433,6 @@ module.exports = class PublicationCtrl {
         router.delete(`/:${ name }/:like`, auth.required, this.unlike);
         return router;
     }
+
+    
 }

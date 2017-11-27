@@ -10,6 +10,7 @@ var mongoose = require('mongoose');
 
 // Définition du schéma d'une categorie
 var CategorySchema = new mongoose.Schema({
+    name: String,
     title: String,
     description: String,
     parent: String,

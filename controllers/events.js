@@ -59,7 +59,6 @@ class EventCtrl {
         if(typeof req.query.page !== 'undefined' && req.query.page >= 1) {
             opts.skip = Number((req.query.page - 1) * req.query.size);
         }
-        console.log(query);
         return Event.find(query, {}, opts).then(function(events){
             if(!events) return res.sendStatus(404);            
             return res.status(200).json({ events: events });
