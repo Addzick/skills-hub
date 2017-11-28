@@ -23,6 +23,10 @@ class EventCtrl {
         if(typeof req.query.types !== 'undefined') {
             query.type = { '$in' : req.query.types };
         }
+
+        if(typeof req.query.excludes !== 'undefined') {
+            query.type = { '$nin' : req.query.excludes };
+        }
         
         if(typeof req.query.startDate !== 'undefined' && typeof req.query.endDate !== 'undefined') {
             query.updatedAt = { 

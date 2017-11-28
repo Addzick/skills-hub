@@ -20,11 +20,15 @@ var AddressSchema = new mongoose.Schema({
   toObject: {
     transform: function(doc, ret){
       delete ret.__v;
+      ret.short = doc.zip + ' ' + doc.city;
+      ret.long = doc.street + ' ' + doc.zip + ' ' + doc.city;
     }
   },
   toJSON: {
     transform: function(doc, ret){
       delete ret.__v;
+      ret.short = doc.zip + ' ' + doc.city;
+      ret.long = doc.street + ' ' + doc.zip + ' ' + doc.city;
     }
   }
 });
