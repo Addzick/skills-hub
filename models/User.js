@@ -39,7 +39,9 @@ var UserSchema = new mongoose.Schema({
       delete ret.hash;
       delete ret.salt;
       delete ret.__v;
-      ret.displayName = doc.firstname + ' ' + doc.lastname
+      if(doc.firstname !== undefined ||  doc.lastname !== undefined) {
+        ret.displayName = (doc.firstname !== undefined ? doc.firstname : '') + (doc.lastname !== undefined ? ' ' + doc.lastname : '')
+      }      
     }
   },
   toJSON: {
@@ -48,7 +50,9 @@ var UserSchema = new mongoose.Schema({
       delete ret.hash;
       delete ret.salt;
       delete ret.__v;
-      ret.displayName = doc.firstname + ' ' + doc.lastname
+      if(doc.firstname !== undefined ||  doc.lastname !== undefined) {
+        ret.displayName = (doc.firstname !== undefined ? doc.firstname : '') + (doc.lastname !== undefined ? ' ' + doc.lastname : '')
+      }
     }
   }
 });

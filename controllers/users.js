@@ -102,7 +102,6 @@ class UserCtrl {
             .then(function() {
                 // On renvoie un statut OK avec l'utilisateur et le token
                 return res.status(200).json({ 
-                    token: user.generateJWT(),
                     user: user
                 });
             });
@@ -134,8 +133,7 @@ class UserCtrl {
                     .then(function() {
                         // On renvoie un statut OK avec l'utilisateur et le token
                         return res.status(200).json({ 
-                            token: newUser.generateJWT(),
-                            user: newUser
+                            address: addr
                         });
                     });
                 })
