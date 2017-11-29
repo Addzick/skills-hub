@@ -18,7 +18,7 @@ class TenderCtrl extends PublicationCtrl {
 
     cancel(req, res, next) {
         // On recherche l'utilisateur authentifié
-        return this.User
+        return User
         .findById(req.payload.id)
         .then(function(user) {            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
@@ -43,7 +43,7 @@ class TenderCtrl extends PublicationCtrl {
 
     close(req, res, next) {
         // On recherche l'utilisateur authentifié
-        return this.User
+        return User
         .findById(req.payload.id)
         .then(function(user) {            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
