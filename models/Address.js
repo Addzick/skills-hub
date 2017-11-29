@@ -11,6 +11,7 @@ var mongoose = require('mongoose');
 // Définition du schéma d'un utilisateur
 var AddressSchema = new mongoose.Schema({
     street: String,
+    number: String,
     complement: String,
     zip: String,
     city: String,
@@ -21,14 +22,14 @@ var AddressSchema = new mongoose.Schema({
     transform: function(doc, ret){
       delete ret.__v;
       ret.short = doc.zip + ' ' + doc.city;
-      ret.long = doc.street + ' ' + doc.zip + ' ' + doc.city;
+      ret.long = doc.street + ', '+ doc.number + ' ' + doc.zip + ' ' + doc.city;
     }
   },
   toJSON: {
     transform: function(doc, ret){
       delete ret.__v;
       ret.short = doc.zip + ' ' + doc.city;
-      ret.long = doc.street + ' ' + doc.zip + ' ' + doc.city;
+      ret.long = doc.street + ', '+ doc.number + ' ' + doc.zip + ' ' + doc.city;
     }
   }
 });
