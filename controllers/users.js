@@ -81,7 +81,7 @@ class UserCtrl {
             return Event
             .newEvent('user_disconnected', user, { kind: 'user', item: user })
             .then(function() {
-                return res.sendStatus(202);
+                return res.status(200).json({ message : 'Au revoir et à bientôt' });
             });
             return next();
         }).catch(next);
