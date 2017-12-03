@@ -40,10 +40,6 @@ class RatingCtrl extends PublicationCtrl {
         return super.findAll(req, res, next,'rating');
     }
 
-    count(req, res, next) {
-        return super.count(req, res, next,'rating');
-    }
-
     create(req, res, next) {
         return super.create(req, res, next,'rating');
     }
@@ -58,22 +54,6 @@ class RatingCtrl extends PublicationCtrl {
 
     delete(req, res, next) {
         return super.delete(req, res, next,'rating');
-    }
-
-    comment(req, res, next) {
-        return super.comment(req, res, next,'rating');
-    }
-
-    uncomment(req, res, next) {
-        return super.uncomment(req, res, next,'rating');
-    }
-
-    like(req, res, next) {
-        return super.like(req, res, next,'rating');
-    }
-
-    unlike(req, res, next) {
-        return super.unlike(req, res, next,'rating');
     }
 
     getRoutes() {

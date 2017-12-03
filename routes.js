@@ -14,7 +14,7 @@ const passportConfig = require('./config/passport');
 module.exports.initialization = function(app) {
 
   // Définition de l'URL pour l'api
-  router.use('/api',              require('./controllers/users').getRoutes(router));
+  router.use('/api',              require('./controllers/users').getRoutes());
   router.use('/api/articles',     require('./controllers/articles').getRoutes());
   router.use('/api/categories',   require('./controllers/categories').getRoutes());
   router.use('/api/events',       require('./controllers/events').getRoutes());
@@ -22,6 +22,7 @@ module.exports.initialization = function(app) {
   router.use('/api/ratings',      require('./controllers/ratings').getRoutes());
   router.use('/api/tasks',        require('./controllers/tasks').getRoutes());
   router.use('/api/tenders',      require('./controllers/tenders').getRoutes());
+  router.use('/api/reactions',    require('./controllers/reactions').getRoutes());
 
   // Définition du traitement de transformation des erreurs de validation
   router.use(function(err, req, res, next){

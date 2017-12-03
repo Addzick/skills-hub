@@ -8,7 +8,10 @@
 const mongoose = require('mongoose');
 const auth = require('../config/auth');
 const PublicationCtrl = require('./publications');
-
+const Event = mongoose.model('event');
+const Tender = mongoose.model('tender');
+const User = mongoose.model('user');
+const Address  = mongoose.model('address');
 
 // Définition du controleur
 class TenderCtrl extends PublicationCtrl {
@@ -28,11 +31,11 @@ class TenderCtrl extends PublicationCtrl {
             // On contrôle que l'utilisateur soit bien l'auteur
             if(tender.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
             // On met à jour l'item            
-            return this.Model
+            return Tender
             .findOneAndUpdate({_id: tender._id }, { $set: { canceledAt: Date.now() }})
             .then(function() {
                 // On crée un evenement
-                return this.Event
+                return Event
                 .newEvent('tender_canceled', user, { kind: this.ModelName, item: tender }, {})
                 .then(function() {
                     return res.status(200).json({ tender: tender });
@@ -53,11 +56,11 @@ class TenderCtrl extends PublicationCtrl {
             // On contrôle que l'utilisateur soit bien l'auteur
             if(tender.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
             // On met à jour l'item            
-            return this.Model
+            return Tender
             .findOneAndUpdate({_id: tender._id }, { $set: { closedAt: Date.now() }})
             .then(function() {
                 // On crée un evenement
-                return this.Event
+                return Event
                 .newEvent('tender_closed', user, { kind: this.ModelName, item: tender }, {})
                 .then(function() {
                     return res.status(200).json({ tender: tender });
@@ -162,22 +165,6 @@ class TenderCtrl extends PublicationCtrl {
 
     delete(req, res, next) {
         return super.delete(req, res, next,'tender');
-    }
-
-    comment(req, res, next) {
-        return super.comment(req, res, next,'tender');
-    }
-
-    uncomment(req, res, next) {
-        return super.uncomment(req, res, next,'tender');
-    }
-
-    like(req, res, next) {
-        return super.like(req, res, next,'tender');
-    }
-
-    unlike(req, res, next) {
-        return super.unlike(req, res, next,'tender');
     }
 
     getRoutes() {

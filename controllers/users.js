@@ -11,7 +11,7 @@ const mongoose = require('mongoose');
 const auth     = require('../config/auth');
 const User     = mongoose.model('user');
 const Event    = mongoose.model('event');
-const Address    = mongoose.model('address');
+const Address  = mongoose.model('address');
 
 // Définition du controleur
 class UserCtrl {
@@ -87,7 +87,7 @@ class UserCtrl {
         }).catch(next);
     }
 
-    editAccount(req, res, next) {
+    edit(req, res, next) {
         // On recherche l'utilisateur authentifié
         return User
         .findByIdAndUpdate(req.payload.id, { 
@@ -136,8 +136,7 @@ class UserCtrl {
                             address: addr
                         });
                     });
-                })
-                
+                });                
             });
             
         }).catch(next);
@@ -260,7 +259,7 @@ class UserCtrl {
         router.post('/login', this.login);
         router.delete('/logout', auth.required, this.logout);
         router.get('/account', auth.required, this.get);
-        router.post('/account', auth.required, this.editAccount);
+        router.post('/account', auth.required, this.edit);
         router.put('/account', auth.required, this.editAddress);
         router.get('/users', auth.optional,this.findAll);
         router.get('/users/:username', auth.optional,this.findOne);

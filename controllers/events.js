@@ -56,16 +56,28 @@ class EventCtrl {
                 
         if(typeof req.query.paginate !== 'undefined') {
             opts.sort = req.query.sort;
-        }      
+        }  
+
         if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
             opts.limit = Number(req.query.size);
         }
+
         if(typeof req.query.page !== 'undefined' && req.query.page >= 1) {
             opts.skip = Number((req.query.page - 1) * req.query.size);
         }
-        return Event.find(query, {}, opts).then(function(events){
-            if(!events) return res.sendStatus(404);            
-            return res.status(200).json({ events: events });
+
+        return Promise.all([
+            Event
+            .find(query, {}, opts)
+            .exec(),
+            Event
+            .count(query)
+            .exec()
+        ]).then(function(results){ 
+            return res.status(200).json({ 
+                events: results[0],
+                count: results[1]
+            });
         }).catch(next);
     }
 

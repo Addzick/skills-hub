@@ -8,6 +8,9 @@
 const mongoose = require('mongoose');
 const auth = require('../config/auth');
 const PublicationCtrl = require('./publications');
+const Event = mongoose.model('event');
+const Task = mongoose.model('task');
+const User = mongoose.model('user');
 
 // Définition du controleur
 class TaskCtrl extends PublicationCtrl {
@@ -17,7 +20,7 @@ class TaskCtrl extends PublicationCtrl {
 
     confirm(req, res, next) {
         // On recherche l'utilisateur authentifié
-        return this.User
+        return User
         .findById(req.payload.id)
         .then(function(user) {            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
@@ -27,11 +30,11 @@ class TaskCtrl extends PublicationCtrl {
             // On contrôle que l'utilisateur soit bien l'auteur
             if(task.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
             // On met à jour la task
-            return this.Model
+            return Task
             .findOneAndUpdate({_id: task._id }, { $set: { confirmedAt: Date.now() }})
             .then(function() {
                 // On crée un evenement
-                return this.Event
+                return Event
                 .newEvent('task_confirmed', user, { kind: 'task', item: task })
                 .then(function() {
                     return res.status(200).json({ task: task });
@@ -42,7 +45,7 @@ class TaskCtrl extends PublicationCtrl {
 
     pay(req, res, next) {
         // On recherche l'utilisateur authentifié
-        return this.User
+        return User
         .findById(req.payload.id)
         .then(function(user) {            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
@@ -52,11 +55,11 @@ class TaskCtrl extends PublicationCtrl {
             // On contrôle que l'utilisateur soit bien l'auteur
             if(task.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
             // On met à jour la task
-            return this.Model
+            return Task
             .findOneAndUpdate({_id: task._id }, { $set: { paidAt: Date.now() }})
             .then(function() {
                 // On crée un evenement
-                return this.Event
+                return Event
                 .newEvent('task_paid', user, { kind: 'task', item: task })
                 .then(function() {
                     return res.status(200).json({ task: task });
@@ -67,7 +70,7 @@ class TaskCtrl extends PublicationCtrl {
 
     cancel(req, res, next) {
         // On recherche l'utilisateur authentifié
-        return this.User
+        return User
         .findById(req.payload.id)
         .then(function(user) {            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
@@ -77,11 +80,11 @@ class TaskCtrl extends PublicationCtrl {
             // On contrôle que l'utilisateur soit bien l'auteur
             if(task.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
             // On met à jour l'item            
-            return this.Model
+            return Task
             .findOneAndUpdate({_id: task._id }, { $set: { canceledAt: Date.now() }})
             .then(function() {
                 // On crée un evenement
-                return this.Event
+                return Event
                 .newEvent('task_canceled', user, { kind: 'task', item: task }, {})
                 .then(function() {
                     return res.status(200).json({ task: task });
@@ -128,10 +131,6 @@ class TaskCtrl extends PublicationCtrl {
         return super.findAll(req, res, next,'task');
     }
 
-    count(req, res, next) {
-        return super.count(req, res, next,'task');
-    }
-
     create(req, res, next) {
         return super.create(req, res, next,'task');
     }
@@ -146,22 +145,6 @@ class TaskCtrl extends PublicationCtrl {
 
     delete(req, res, next) {
         return super.delete(req, res, next,'task');
-    }
-
-    comment(req, res, next) {
-        return super.comment(req, res, next,'task');
-    }
-
-    uncomment(req, res, next) {
-        return super.uncomment(req, res, next,'task');
-    }
-
-    like(req, res, next) {
-        return super.like(req, res, next,'task');
-    }
-
-    unlike(req, res, next) {
-        return super.unlike(req, res, next,'task');
     }
 
     getRoutes() {

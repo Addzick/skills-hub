@@ -6,6 +6,7 @@
 */
 var PublicationCtrl = require('./publications');
 var auth = require('../config/auth');
+const Article = mongoose.model('article');
 
 // Définition du controleur
 class ArticleCtrl extends PublicationCtrl {
@@ -14,11 +15,14 @@ class ArticleCtrl extends PublicationCtrl {
     }
 
     getTags(req, res, next) {
-        this.Model.find({})
+        return Article.find({})
         .distinct('tags')
-        .exec().then(function(tags) {
+        .exec()
+        .then(function(tags) {
             // On renvoie la liste des tags
-            return res.status(200).json(tags);
+            return res.status(200).json({
+                tags: tags
+            });
         }).catch(next);
     }
 
@@ -43,10 +47,6 @@ class ArticleCtrl extends PublicationCtrl {
         return super.findAll(req, res, next,'article');
     }
 
-    count(req, res, next) {
-        return super.count(req, res, next,'article');
-    }
-
     create(req, res, next) {
         return super.create(req, res, next,'article');
     }
@@ -61,22 +61,6 @@ class ArticleCtrl extends PublicationCtrl {
 
     delete(req, res, next) {
         return super.delete(req, res, next,'article');
-    }
-
-    comment(req, res, next) {
-        return super.comment(req, res, next,'article');
-    }
-
-    uncomment(req, res, next) {
-        return super.uncomment(req, res, next,'article');
-    }
-
-    like(req, res, next) {
-        return super.like(req, res, next,'article');
-    }
-
-    unlike(req, res, next) {
-        return super.unlike(req, res, next,'article');
     }
 
     getRoutes() {

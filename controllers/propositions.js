@@ -4,10 +4,12 @@
   Date        : 26.10.2017
   Description : Contient les méthodes de gestion des propositions
 */
-
 const mongoose = require('mongoose');
 const auth = require('../config/auth');
 const PublicationCtrl = require('./publications');
+const Event = mongoose.model('event');
+const Proposition = mongoose.model('proposition');
+const User = mongoose.model('user');
 
 // Définition du controleur
 class PropositionCtrl extends PublicationCtrl {
@@ -17,7 +19,7 @@ class PropositionCtrl extends PublicationCtrl {
 
     accept(req, res, next) {
         // On recherche l'utilisateur authentifié
-        return this.User
+        return User
         .findById(req.payload.id)
         .then(function(user) {            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
@@ -27,11 +29,11 @@ class PropositionCtrl extends PublicationCtrl {
             // On contrôle que l'utilisateur soit bien l'auteur de l'appel d'offres
             if(prop.source.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
             // On met à jour la proposition
-            return this.Model
+            return Proposition
             .findOneAndUpdate({_id: prop._id }, { $set: { acceptedAt: Date.now() }})
             .then(function() {
                 // On crée un evenement
-                return this.Event
+                return Event
                 .newEvent('proposition_accepted', user, { kind: 'proposition', item: prop })
                 .then(function() {
                     return res.status(200).json({ proposition: prop });
@@ -42,7 +44,7 @@ class PropositionCtrl extends PublicationCtrl {
 
     reject(req, res, next) {
         // On recherche l'utilisateur authentifié
-        return this.User
+        return User
         .findById(req.payload.id)
         .then(function(user) {            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
@@ -52,7 +54,7 @@ class PropositionCtrl extends PublicationCtrl {
             // On contrôle que l'utilisateur soit bien l'auteur de l'appel d'offres
             if(prop.source.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
             // On met à jour la proposition
-            return this.Model
+            return Proposition
             .findOneAndUpdate({_id: prop._id }, { $set: { rejectedAt: Date.now() }})
             .then(function() {
                 // On crée un evenement
@@ -67,7 +69,7 @@ class PropositionCtrl extends PublicationCtrl {
 
     cancel(req, res, next) {
         // On recherche l'utilisateur authentifié
-        return this.User
+        return User
         .findById(req.payload.id)
         .then(function(user) {            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
@@ -77,11 +79,11 @@ class PropositionCtrl extends PublicationCtrl {
             // On contrôle que l'utilisateur soit bien l'auteur de la proposition
             if(prop.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
             // On met à jour l'item            
-            return this.Model
+            return Proposition
             .findOneAndUpdate({_id: prop._id }, { $set: { canceledAt: Date.now() }})
             .then(function() {
                 // On crée un evenement
-                return this.Event
+                return Event
                 .newEvent('proposition_canceled', user, { kind: 'proposition', item: prop }, {})
                 .then(function() {
                     return res.status(200).json({ proposition: prop });
@@ -120,10 +122,6 @@ class PropositionCtrl extends PublicationCtrl {
         return super.findAll(req, res, next,'proposition');
     }
 
-    count(req, res, next) {
-        return super.count(req, res, next,'proposition');
-    }
-
     create(req, res, next) {
         return super.create(req, res, next,'proposition');
     }
@@ -138,22 +136,6 @@ class PropositionCtrl extends PublicationCtrl {
 
     delete(req, res, next) {
         return super.delete(req, res, next,'proposition');
-    }
-
-    comment(req, res, next) {
-        return super.comment(req, res, next,'proposition');
-    }
-
-    uncomment(req, res, next) {
-        return super.uncomment(req, res, next,'proposition');
-    }
-
-    like(req, res, next) {
-        return super.like(req, res, next,'proposition');
-    }
-
-    unlike(req, res, next) {
-        return super.unlike(req, res, next,'proposition');
     }
 
     getRoutes() {
