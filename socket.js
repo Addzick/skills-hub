@@ -17,9 +17,6 @@ module.exports.initialization = function(server) {
     
     // Définition des méthodes attribuées au socket
     io.sockets.on('connection', function(socket) {
-      // Log connection
-      console.info(`${ socket.id } : connection opened ...`);
-    
       // Set socket ID
       socket.on('set socket', function(username) {
         userCtrl.setSocketId(username, socket.id);
@@ -28,11 +25,6 @@ module.exports.initialization = function(server) {
       // Unset socket ID
       socket.on('unset socket', function(username) {
         userCtrl.unsetSocketId(username);
-      });
-      
-      // Disconnection
-      socket.on('disconnect', function() {
-        console.info(`${ socket.id } : connection closed`);
       });
     });
     

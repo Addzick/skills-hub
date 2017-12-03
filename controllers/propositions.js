@@ -12,9 +12,8 @@ const Proposition = mongoose.model('proposition');
 const User = mongoose.model('user');
 
 // Définition du controleur
-class PropositionCtrl extends PublicationCtrl {
+class PropositionCtrl {
     constructor(){
-        super();
     }
 
     accept(req, res, next) {
@@ -93,7 +92,7 @@ class PropositionCtrl extends PublicationCtrl {
     }
 
     getQueryFromRequest(req) {
-        var query = super.getQueryFromRequest(req);        
+        var query = PublicationCtrl.getQueryFromRequest(req);        
         if(typeof req.query.startAmount !== 'undefined' && typeof req.query.endAmount !== 'undefined') {
             query.amount = { 
                 $gte: new Number(req.query.startAmount),
@@ -111,35 +110,42 @@ class PropositionCtrl extends PublicationCtrl {
     }
 
     preload(req, res, next) {
-        return super.preload(req, res, next,'proposition');
+        return PublicationCtrl.preload(req, res, next,'proposition');
     }
 
     findOne(req, res, next) {
-        return super.findOne(req, res, next,'proposition');
+        return PublicationCtrl.findOne(req, res, next,'proposition');
     }
 
     findAll(req, res, next) {
-        return super.findAll(req, res, next,'proposition');
+        return PublicationCtrl.findAll(req, res, next,'proposition');
     }
 
     create(req, res, next) {
-        return super.create(req, res, next,'proposition');
+        return PublicationCtrl.create(req, res, next,'proposition');
     }
 
     edit(req, res, next) {
-        return super.edit(req, res, next,'proposition');
+        return PublicationCtrl.edit(req, res, next,'proposition');
     }
 
     publish(req, res, next) {
-        return super.publish(req, res, next,'proposition');
+        return PublicationCtrl.publish(req, res, next,'proposition');
     }
 
     delete(req, res, next) {
-        return super.delete(req, res, next,'proposition');
+        return PublicationCtrl.delete(req, res, next,'proposition');
     }
 
     getRoutes() {
-        var router = super.getRoutes('proposition');
+        var router = require('express').Router();
+        router.param('proposition', this.preload);
+        router.get('/', auth.optional, this.findAll);
+        router.get('/:proposition', auth.optional, this.findOne);
+        router.post('/', auth.required, this.create);
+        router.put('/:proposition', auth.required, this.edit);
+        router.patch('/:proposition', auth.required, this.publish);
+        router.delete('/:proposition', auth.required, this.delete);
         router.post('/:proposition/accept', auth.required, this.accept);
         router.post('/:proposition/reject', auth.required, this.reject);
         router.post('/:proposition/cancel', auth.required, this.cancel);

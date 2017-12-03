@@ -4,14 +4,14 @@
   Date        : 26.10.2017
   Description : Définit le controleur dédié à la gestion des articles
 */
-var PublicationCtrl = require('./publications');
-var auth = require('../config/auth');
+const auth = require('../config/auth');
+const mongoose = require('mongoose');
 const Article = mongoose.model('article');
+const PublicationCtrl = require('./publications');
 
 // Définition du controleur
-class ArticleCtrl extends PublicationCtrl {
+class ArticleCtrl {
     constructor(){
-        super();
     }
 
     getTags(req, res, next) {
@@ -27,7 +27,7 @@ class ArticleCtrl extends PublicationCtrl {
     }
 
     getQueryFromRequest(req){
-        var query = super.getQueryFromRequest(req);
+        var query = PublicationCtrl.getQueryFromRequest(req);
         // A-t-on des tags ?  
         if(typeof req.query.tags !== 'undefined' ) {
             query.tags = { $in : req.query.tags };
@@ -36,35 +36,42 @@ class ArticleCtrl extends PublicationCtrl {
     }
     
     preload(req, res, next) {
-        return super.preload(req, res, next,'article');
+        return PublicationCtrl.preload(req, res, next,'article');
     }
 
     findOne(req, res, next) {
-        return super.findOne(req, res, next,'article');
+        return PublicationCtrl.findOne(req, res, next,'article');
     }
 
     findAll(req, res, next) {
-        return super.findAll(req, res, next,'article');
+        return PublicationCtrl.findAll(req, res, next,'article');
     }
 
     create(req, res, next) {
-        return super.create(req, res, next,'article');
+        return PublicationCtrl.create(req, res, next,'article');
     }
 
     edit(req, res, next) {
-        return super.edit(req, res, next,'article');
+        return PublicationCtrl.edit(req, res, next,'article');
     }
 
     publish(req, res, next) {
-        return super.publish(req, res, next,'article');
+        return PublicationCtrl.publish(req, res, next,'article');
     }
 
     delete(req, res, next) {
-        return super.delete(req, res, next,'article');
+        return PublicationCtrl.delete(req, res, next,'article');
     }
 
     getRoutes() {
-        var router = super.getRoutes('article');
+        var router = require('express').Router();
+        router.param('article', this.preload);
+        router.get('/', auth.optional, this.findAll);
+        router.get('/:article', auth.optional, this.findOne);
+        router.post('/', auth.required, this.create);
+        router.put('/:article', auth.required, this.edit);
+        router.patch('/:article', auth.required, this.publish);
+        router.delete('/:article', auth.required, this.delete);
         router.get('/tags', auth.optional, this.getTags);
         return router;
     }

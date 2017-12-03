@@ -22,7 +22,8 @@ module.exports.initialization = function(app) {
   router.use('/api/ratings',      require('./controllers/ratings').getRoutes());
   router.use('/api/tasks',        require('./controllers/tasks').getRoutes());
   router.use('/api/tenders',      require('./controllers/tenders').getRoutes());
-  router.use('/api/reactions',    require('./controllers/reactions').getRoutes());
+  router.use('/api/comments',     require('./controllers/comments').getRoutes());
+  router.use('/api/likes',        require('./controllers/likes').getRoutes());
 
   // Définition du traitement de transformation des erreurs de validation
   router.use(function(err, req, res, next){

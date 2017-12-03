@@ -46,6 +46,4 @@ require('./error').initialization(app, isProduction);
 require('./socket').initialization(server);
 
 // Démarrage du serveur
-server.listen( process.env.PORT || 3000, function(){
-  console.info('Server is listening on port ' + server.address().port);
-});
+server.listen(process.env.PORT || 3000);

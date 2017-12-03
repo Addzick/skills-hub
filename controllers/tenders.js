@@ -14,9 +14,8 @@ const User = mongoose.model('user');
 const Address  = mongoose.model('address');
 
 // Définition du controleur
-class TenderCtrl extends PublicationCtrl {
+class TenderCtrl {
     constructor(){
-        super();
     }
 
     cancel(req, res, next) {
@@ -70,7 +69,7 @@ class TenderCtrl extends PublicationCtrl {
     }
 
     getQueryFromRequest(req) {
-        var query = super.getQueryFromRequest(req);        
+        var query = PublicationCtrl.getQueryFromRequest(req);        
         if(typeof req.query.startWorkDate !== 'undefined' && typeof req.query.endWorkDate !== 'undefined') {
             query.workDate = { 
                 $gte: new ISODate(req.query.startWorkDate),
@@ -104,27 +103,27 @@ class TenderCtrl extends PublicationCtrl {
     }
 
     preload(req, res, next) {
-        return super.preload(req, res, next,'tender');
+        return PublicationCtrl.preload(req, res, next,'tender');
     }
 
     findOne(req, res, next) {
-        return super.findOne(req, res, next,'tender');
+        return PublicationCtrl.findOne(req, res, next,'tender');
     }
 
     findAll(req, res, next) {
-        return super.findAll(req, res, next,'tender');
+        return PublicationCtrl.findAll(req, res, next,'tender');
     }
 
     count(req, res, next) {
-        return super.count(req, res, next,'tender');
+        return PublicationCtrl.count(req, res, next,'tender');
     }
 
     create(req, res, next) {
-        return super.create(req, res, next,'tender');
+        return PublicationCtrl.create(req, res, next,'tender');
     }
 
     edit(req, res, next) {
-        return super.edit(req, res, next,'tender');
+        return PublicationCtrl.edit(req, res, next,'tender');
     }
 
     editAddress(req, res, next) {
@@ -160,15 +159,22 @@ class TenderCtrl extends PublicationCtrl {
     }
 
     publish(req, res, next) {
-        return super.publish(req, res, next,'tender');
+        return PublicationCtrl.publish(req, res, next,'tender');
     }
 
     delete(req, res, next) {
-        return super.delete(req, res, next,'tender');
+        return PublicationCtrl.delete(req, res, next,'tender');
     }
 
     getRoutes() {
-        var router = super.getRoutes('tender');
+        var router = require('express').Router();
+        router.param('tender', this.preload);
+        router.get('/', auth.optional, this.findAll);
+        router.get('/:tender', auth.optional, this.findOne);
+        router.post('/', auth.required, this.create);
+        router.put('/:tender', auth.required, this.edit);
+        router.patch('/:tender', auth.required, this.publish);
+        router.delete('/:tender', auth.required, this.delete);
         router.post('/:tender/close', auth.required, this.close);
         router.post('/:tender/cancel', auth.required, this.cancel);
         return router;

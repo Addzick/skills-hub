@@ -13,9 +13,8 @@ const Task = mongoose.model('task');
 const User = mongoose.model('user');
 
 // Définition du controleur
-class TaskCtrl extends PublicationCtrl {
+class TaskCtrl {
     constructor(){
-        super();
     }
 
     confirm(req, res, next) {
@@ -94,7 +93,7 @@ class TaskCtrl extends PublicationCtrl {
     }
 
     getQueryFromRequest(req) {
-        var query = super.getQueryFromRequest(req);        
+        var query = PublicationCtrl.getQueryFromRequest(req);        
         if(typeof req.query.startAmount !== 'undefined' && typeof req.query.endAmount !== 'undefined') {
             query.amount = { 
                 $gte: new Number(req.query.startAmount),
@@ -120,35 +119,42 @@ class TaskCtrl extends PublicationCtrl {
     }
 
     preload(req, res, next) {
-        return super.preload(req, res, next,'task');
+        return PublicationCtrl.preload(req, res, next,'task');
     }
 
     findOne(req, res, next) {
-        return super.findOne(req, res, next,'task');
+        return PublicationCtrl.findOne(req, res, next,'task');
     }
 
     findAll(req, res, next) {
-        return super.findAll(req, res, next,'task');
+        return PublicationCtrl.findAll(req, res, next,'task');
     }
 
     create(req, res, next) {
-        return super.create(req, res, next,'task');
+        return PublicationCtrl.create(req, res, next,'task');
     }
 
     edit(req, res, next) {
-        return super.edit(req, res, next,'task');
+        return PublicationCtrl.edit(req, res, next,'task');
     }
 
     publish(req, res, next) {
-        return super.publish(req, res, next,'task');
+        return PublicationCtrl.publish(req, res, next,'task');
     }
 
     delete(req, res, next) {
-        return super.delete(req, res, next,'task');
+        return PublicationCtrl.delete(req, res, next,'task');
     }
 
     getRoutes() {
-        var router = super.getRoutes('task');
+        var router = require('express').Router();
+        router.param('task', this.preload);
+        router.get('/', auth.optional, this.findAll);
+        router.get('/:task', auth.optional, this.findOne);
+        router.post('/', auth.required, this.create);
+        router.put('/:task', auth.required, this.edit);
+        router.patch('/:task', auth.required, this.publish);
+        router.delete('/:task', auth.required, this.delete);
         router.post('/:task/confirm', auth.required, this.confirm);
         router.post('/:task/pay', auth.required, this.pay);
         router.post('/:task/cancel', auth.required, this.cancel);

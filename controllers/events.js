@@ -6,8 +6,8 @@
 */
 
 // Importation des ressources externes
-const mongoose = require('mongoose');
 const auth = require('../config/auth');
+const mongoose = require('mongoose');
 const Event = mongoose.model('event');
 
 // Définition du controleur
@@ -20,6 +20,7 @@ class EventCtrl {
 
         var query = {};
         var opts = { skip: 0, limit: 20, sort: { updatedAt: 'desc' } };
+        
         if(typeof req.query.types !== 'undefined') {
             query.type = { '$in' : req.query.types };
         }

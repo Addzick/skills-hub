@@ -49,13 +49,9 @@ module.exports.initialization = function(app) {
         opts.user = config.dbUser;
         opts.pass = config.dbPwd;
     }
+    mongoose.Promise = global.Promise;
     mongoose.connect(config.dbUri, opts, function(err){
-        if(err) {
-        console.error(err);
-        } else {
-        console.info("Connection open on DB : " + config.dbUri);
-        
-        }  
+        if(err) { console.error(err); }   
     });    
     // Définition des paramètres d'une session
     var MongoStore = require('connect-mongo')(session);
@@ -75,7 +71,6 @@ module.exports.initialization = function(app) {
         .findOneAndUpdate({ name: cat.name }, cat, { new: true, upsert: true }, function(err, doc){
             if(err) { console.error(err); }
             if(!doc) { console.error(`Cannot create category ${ cat.name }`); }
-            else { console.log(`New category : ${ cat.title }`); }
         });
     });
 }

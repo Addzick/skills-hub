@@ -224,14 +224,7 @@ class UserCtrl {
         .findOneAndUpdate(
             { username: username },
             { connection: socketid }
-        )
-        .then(function(user) {
-            if(user) {
-                console.log(`Added socket id to user ==> ${ user.username }`);
-            } else{
-                console.error(`Unable to set socket id for user ==> ${ user.username }`);
-            }
-        }).catch(function(err){
+        ).catch(function(err){
             console.error(err);
         });
     }
@@ -242,13 +235,7 @@ class UserCtrl {
             { username: username },
             { $set: {connection: '' }},
             { new: true }
-        ).then(function(user) {
-            if(user) {
-                console.log(`Removed socket id to user ==> ${ user.username }`);
-            } else{
-                console.error(`Unable to unset socket id for user ==> ${ user.username }`);
-            }
-        }).catch(function(err) {
+        ).catch(function(err) {
             console.error(err);
         });
     }

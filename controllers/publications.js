@@ -15,7 +15,7 @@ const Comment = mongoose.model('comment');
 const Like = mongoose.model('like');
 
 // Définition du controleur de base
-module.exports = class PublicationCtrl {   
+class PublicationCtrl {
 
     constructor() {}
 
@@ -101,34 +101,6 @@ module.exports = class PublicationCtrl {
           }).catch(next);
     }
 
-    preloadComment(req, res, next) {
-        // On recherche le commentaire correspondant
-        return Comment
-        .findOne({_id: mongoose.Types.ObjectId(req.params.comment)})
-        .then(function(comment){
-            // Si aucun commentaire trouvé, on renvoie une erreur 404
-            if(!comment) { return res.sendStatus(404); }        
-            // On remplit la requête avec le commentaire trouvé
-            req.comment = comment;
-            // On continue l'execution
-            return next();
-          }).catch(next);
-    }
-
-    preloadLike(req, res, next) {
-        // On recherche le like correspondant
-        return Like
-        .findOne({_id: mongoose.Types.ObjectId(req.params.like)})
-        .then(function(like) {
-            // Si aucun like trouvé, on renvoie une erreur 404
-            if(!like) { return res.sendStatus(404); }        
-            // On remplit la requête avec le like trouvé
-            req.like = like;
-            // On continue l'execution
-            return next();
-          }).catch(next);
-    }
-
     findOne(req, res, next, name) {
         // On execute la requête de sélection et on renvoie le résultat
         return mongoose.model(name)
@@ -141,12 +113,15 @@ module.exports = class PublicationCtrl {
     }
 
     findAll(req, res, next, name) {
+        var query = this.getQueryFromRequest(req);
+        var opts = this.getOptionsFromRequest(req); 
+
         return Promise.all([
             mongoose.model(name)
-            .find(this.getQueryFromRequest(req), {}, this.getOptionsFromRequest(req))
+            .find(query, {}, opts)
             .exec(),
             mongoose.model(name)
-            .count(this.getQueryFromRequest(req))
+            .count(query)
             .exec()
         ]).then(function(results){ 
             return res.status(200).json({ 
@@ -256,19 +231,6 @@ module.exports = class PublicationCtrl {
             });
         }).catch(next);
     }
-
-    getRoutes(name) {
-        var router = require('express').Router();
-        router.param(`${ name }`, this.preload);
-        router.param('category', this.preloadCategory);
-        router.get('/', auth.optional, this.findAll);
-        router.get(`/:${ name }`, auth.optional, this.findOne);
-        router.post('/', auth.required, this.create);
-        router.put(`/:${ name }`, auth.required, this.edit);
-        router.patch(`/:${ name }`, auth.required, this.publish);
-        router.delete(`/:${ name }`, auth.required, this.delete);
-        return router;
-    }
-
-    
 }
+
+module.exports = new PublicationCtrl();

@@ -1,8 +1,8 @@
 /*
-  Fichier     : controllers/reactions.js
+  Fichier     : controllers/comments.js
   Auteur      : Youness FATH
   Date        : 20.11.2017
-  Description : Controleur de base contenant les méthodes de gestion des reactions
+  Description : Controleur de base contenant les méthodes de gestion des commentaires
 */
 
 // Importation des ressources externes
@@ -11,10 +11,9 @@ const mongoose = require('mongoose');
 const User = mongoose.model('user');
 const Event = mongoose.model('event');
 const Comment = mongoose.model('comment');
-const Like = mongoose.model('like');
 
 // Définition du controleur de base
-module.exports = class ReactionCtrl {   
+class CommentCtrl {
 
     constructor() {}
 
@@ -59,7 +58,7 @@ module.exports = class ReactionCtrl {
          return opts;
     }
 
-    preloadComment(req, res, next) {
+    preload(req, res, next) {
         // On recherche le commentaire correspondant
         return Comment
         .findOne({_id: mongoose.Types.ObjectId(req.params.comment)})
@@ -73,21 +72,7 @@ module.exports = class ReactionCtrl {
           }).catch(next);
     }
 
-    preloadLike(req, res, next) {
-        // On recherche le like correspondant
-        return Like
-        .findOne({_id: mongoose.Types.ObjectId(req.params.like)})
-        .then(function(like) {
-            // Si aucun like trouvé, on renvoie une erreur 404
-            if(!like) { return res.sendStatus(404); }        
-            // On remplit la requête avec le like trouvé
-            req.like = like;
-            // On continue l'execution
-            return next();
-          }).catch(next);
-    }
-
-    findOneComment(req, res, next) {
+    findOne(req, res, next) {
         // On execute la requête de sélection et on renvoie le résultat
         return Comment
         .findOne({_id: mongoose.Types.ObjectId(req.params.comment)})
@@ -99,41 +84,16 @@ module.exports = class ReactionCtrl {
         }).catch(next);
     }
 
-    findOneLike(req, res, next) {
-        // On execute la requête de sélection et on renvoie le résultat
-        return Like
-        .findOne({_id: mongoose.Types.ObjectId(req.params.like)})
-        .populate(this.getChildsFromRequest(req))
-        .exec()
-        .then(function(item) {
-            if (!item) { return res.sendStatus(404); }            
-            return res.status(200).json({ like : item });
-        }).catch(next);
-    }
-
-    findAllComments(req, res, next) {
+    findAll(req, res, next) {
+        var query = this.getQueryFromRequest(req);
+        var opts = this.getOptionsFromRequest(req);
+        
         return Promise.all([
             Comment
-            .find(this.getQueryFromRequest(req), {}, this.getOptionsFromRequest(req))
+            .find(query, {}, opts)
             .exec(),
             Comment
-            .count(this.getQueryFromRequest(req))
-            .exec()
-        ]).then(function(results){ 
-            return res.status(200).json({ 
-                comments: results[0],
-                count: results[1]
-            });
-        }).catch(next);
-    }
-
-    findAllLikes(req, res, next) {
-        return Promise.all([
-            Like
-            .find(this.getQueryFromRequest(req), {}, this.getOptionsFromRequest(req))
-            .exec(),
-            Like
-            .count(this.getQueryFromRequest(req))
+            .count(query)
             .exec()
         ]).then(function(results){ 
             return res.status(200).json({ 
@@ -171,7 +131,7 @@ module.exports = class ReactionCtrl {
         }).catch(next);
     }
 
-    uncomment(req, res, next, name) {
+    uncomment(req, res, next) {
         // On recherche l'utilisateur authentifié
         return User
         .findById(req.payload.id)
@@ -195,73 +155,15 @@ module.exports = class ReactionCtrl {
         }).catch(next);
     }
 
-    like(req, res, next, name) {
-        // On recherche l'utilisateur authentifié
-        return User
-        .findById(req.payload.id)
-        .then(function(user) {
-            // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
-            if(!user) { return res.sendStatus(401); }            
-            // On crée un like            
-            return Like
-            .create({ 
-                author: user,
-                source: req.body.source
-             })
-             .then(function(like) {                
-                // On ajoute le like à la source
-                return mongoose.model(like.source.kind)
-                .findOneAndUpdate({_id: like.source.item._id }, { $push: { likes: like }, $inc: { nbLikes : 1 } })
-                .then(function() {
-                    // On crée un evenement
-                    return Event
-                    .newEvent(`${ like.source.kind }_liked`, user, { kind: 'like', item: like })
-                    .then(function() {
-                        return res.status(200).json({ like: like });
-                    });
-                });
-            });
-        }).catch(next);
-    }
-
-    unlike(req, res, next, name) {
-        // On recherche l'utilisateur authentifié
-        return User
-        .findById(req.payload.id)
-        .then(function(user) {
-            // Si aucun utilisateur n'a été truvé, on renvoie un statut 401
-            if(!user) { return res.sendStatus(401); }
-            // On supprime le like
-            return Like
-            .findByIdAndRemove(req.like._id)
-            .then(function(like) {
-                // On supprime le lien avec la source
-                return mongoose.model(like.source.kind)
-                .findOneAndUpdate({ _id: like.source.item._id }, { $pull: { likes: like }, $inc: { nbLikes : -1 }})
-                .then(function() {
-                    // On crée un evenement
-                    Event
-                    .newEvent(`${ like.source.kind }_unliked`, user, { kind: 'like', item: like })
-                    .then(function() {
-                        return res.sendStatus(202);
-                    });
-                });
-            });
-        }).catch(next);
-    }
-
     getRoutes() {
         var router = require('express').Router();
-        router.param('comment', this.preloadComment);
-        router.param('like', this.preloadLike);        
-        router.get('/comments', auth.optional, this.findAllComments);
-        router.get('/likes', auth.optional, this.findAllLikes);
-        router.get('/:comment', auth.optional, this.findOneComment);
-        router.get('/:like', auth.optional, this.findOneLike);
-        router.post('/comments', auth.required, this.comment);
-        router.delete('/comments/:comment', auth.required, this.uncomment);
-        router.post('/likes', auth.required, this.like);
-        router.delete('/likes/:like', auth.required, this.unlike);
+        router.param('comment', this.preload);   
+        router.get('/', auth.optional, this.findAll);
+        router.get('/:comment', auth.optional, this.findOne);
+        router.post('/', auth.required, this.comment);
+        router.delete('/:comment', auth.required, this.uncomment);
         return router;
     }
 }
+
+module.exports = new CommentCtrl();
