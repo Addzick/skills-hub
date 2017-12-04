@@ -192,7 +192,7 @@ class PublicationCtrl {
             // On récupére l'item préchargé
             var item = req[name];
             // On contrôle que l'utilisateur soit bien l'auteur
-            if(req.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
+            if(item.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
             // On met à jour l'item            
             return mongoose.model(name)
             .findOneAndUpdate({_id: item._id }, {$set: { publishedAt: Date.now() }})

@@ -157,10 +157,10 @@ class UserCtrl {
     findOne(req, res, next) {
         // On recherche l'utilisateur authentifié
         return User
-        .findOne({ username: req.params.username })
+        .findOne({ _id: mongoose.Types.ObjectId(req.params.user) })
         .then(function(user) {
             // Aucun utilisateur, on renvoie un statut 401
-            if(!user){ return res.sendStatus(401); }
+            if(!user){ return res.sendStatus(404); }
             // On renvoie un statut OK et l'utilisateur correctement rempli
             return res.status(200).json({ user: user });
         }).catch(next);
@@ -249,7 +249,7 @@ class UserCtrl {
         router.post('/account', auth.required, this.edit);
         router.put('/account', auth.required, this.editAddress);
         router.get('/users', auth.optional,this.findAll);
-        router.get('/users/:username', auth.optional,this.findOne);
+        router.get('/users/:user', auth.optional,this.findOne);
         return router;
     }
 }
