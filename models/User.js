@@ -41,7 +41,10 @@ var UserSchema = new mongoose.Schema({
       delete ret.__v;
       if(doc.firstname !== undefined ||  doc.lastname !== undefined) {
         ret.displayName = (doc.firstname !== undefined ? doc.firstname : '') + (doc.lastname !== undefined ? ' ' + doc.lastname : '')
-      }      
+      } 
+      else{
+        ret.displayName = 'Utilisateur anonyme'
+      }     
     }
   },
   toJSON: {
@@ -52,7 +55,10 @@ var UserSchema = new mongoose.Schema({
       delete ret.__v;
       if(doc.firstname !== undefined ||  doc.lastname !== undefined) {
         ret.displayName = (doc.firstname !== undefined ? doc.firstname : '') + (doc.lastname !== undefined ? ' ' + doc.lastname : '')
-      }
+      } 
+      else{
+        ret.displayName = 'Utilisateur anonyme'
+      }  
     }
   }
 });
