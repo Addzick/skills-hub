@@ -14,14 +14,18 @@ class RatingCtrl {
     }
 
     getQueryFromRequest(req) {
-        var query = PublicationCtrl.getQueryFromRequest(req);
-        // A-t-on une cible ?
+        const query = PublicationCtrl.getQueryFromRequest(req);
         if(typeof req.query.target !== 'undefined' ) {
             query.target = { _id : mongoose.Types.ObjectId(req.query.target) };
         }
-        // A-t-on un concern ?
         if(typeof req.query.concern !== 'undefined' ) {
             query.concern = { _id : mongoose.Types.ObjectId(req.query.concern) };
+        }
+        if(typeof req.query.startValue !== 'undefined' && typeof req.query.endValue !== 'undefined'){
+            query.value = { 
+                $gt: req.query.startValue,
+                $lt: req.query.endValue
+            }
         }
         return query;
     }

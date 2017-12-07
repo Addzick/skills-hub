@@ -18,7 +18,7 @@ var PropositionSchema =  new mongoose.Schema({
     timeUnit: { type: String, enum: ["ss","mm", "hh", "dd"]},
     workDate: Date,
     validityStart: Date,
-    validityEnd: Date,    
+    validityEnd: Date,
     author: { type: mongoose.SchemaTypes.ObjectId, ref: "user" },
     source: { type: mongoose.SchemaTypes.ObjectId, ref: "tender" },   
     comments: [{ type: mongoose.SchemaTypes.ObjectId, ref: 'comment' }],

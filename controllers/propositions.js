@@ -102,7 +102,7 @@ class PropositionCtrl {
         if(typeof req.query.validOnly !== 'undefined' ) {
             query.validityStart = { $lte: Date.now() };
             query.validityEnd = { $gte: Date.now() };
-        }    
+        }     
         if(typeof req.query.source !== 'undefined' ) {
             query.source = { _id : mongoose.Types.ObjectId(req.query.source) };
         }
