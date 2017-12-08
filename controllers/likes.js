@@ -118,9 +118,10 @@ class LikeCtrl {
              .then(function(like) {                
                 // On ajoute le like à la source
                 return mongoose.model(like.source.kind)
-                .findOneAndUpdate({_id: like.source.item._id }, { $push: { likes: like }, $inc: { nbLikes : 1 } })
-                .then(function() {
+                .findOneAndUpdate({_id: mongoose.Types.ObjectId(like.source.item) }, { $push: { likes: like._id }, $inc: { nbLikes : 1 } })
+                .then(function(item) {
                     // On crée un evenement
+                    console.log(item);
                     return Event
                     .newEvent(`${ like.source.kind }_liked`, user, { kind: 'like', item: like })
                     .then(function() {

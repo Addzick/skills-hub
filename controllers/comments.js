@@ -117,7 +117,7 @@ class CommentCtrl {
              }).then(function(comment) {                
                 // On ajoute le commentaire à la source
                 return mongoose.model(comment.source.kind)
-                .findOneAndUpdate({ _id: comment.source.item._id }, { $push: { comments: comment }, $inc: { nbComments : 1 }})
+                .findOneAndUpdate({ _id: mongoose.Types.ObjectId(comment.source.item) }, { $push: { comments: comment._id }, $inc: { nbComments : 1 }})
                 .then(function() {
                     // On crée un evenement
                     return Event
