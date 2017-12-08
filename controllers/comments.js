@@ -76,7 +76,6 @@ class CommentCtrl {
         // On execute la requête de sélection et on renvoie le résultat
         return Comment
         .findOne({_id: mongoose.Types.ObjectId(req.params.comment)})
-        .populate(this.getChildsFromRequest(req))
         .exec()
         .then(function(item) {
             if (!item) { return res.sendStatus(404); }            
