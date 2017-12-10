@@ -55,10 +55,6 @@ class ArticleCtrl {
         return PublicationCtrl.edit(req, res, next,'article');
     }
 
-    publish(req, res, next) {
-        return PublicationCtrl.publish(req, res, next,'article');
-    }
-
     delete(req, res, next) {
         return PublicationCtrl.delete(req, res, next,'article');
     }
@@ -70,7 +66,6 @@ class ArticleCtrl {
         router.get('/:article', auth.optional, this.findOne);
         router.post('/', auth.required, this.create);
         router.put('/:article', auth.required, this.edit);
-        router.patch('/:article', auth.required, this.publish);
         router.delete('/:article', auth.required, this.delete);
         router.get('/tags', auth.optional, this.getTags);
         return router;

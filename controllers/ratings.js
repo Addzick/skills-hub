@@ -50,10 +50,6 @@ class RatingCtrl {
         return PublicationCtrl.edit(req, res, next,'rating');
     }
 
-    publish(req, res, next) {
-        return PublicationCtrl.publish(req, res, next,'rating');
-    }
-
     delete(req, res, next) {
         return PublicationCtrl.delete(req, res, next,'rating');
     }
@@ -65,7 +61,6 @@ class RatingCtrl {
         router.get('/:rating', auth.optional, this.findOne);
         router.post('/', auth.required, this.create);
         router.put('/:rating', auth.required, this.edit);
-        router.patch('/:rating', auth.required, this.publish);
         router.delete('/:rating', auth.required, this.delete);
         return router;
     }

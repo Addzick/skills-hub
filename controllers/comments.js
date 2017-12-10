@@ -17,43 +17,8 @@ class CommentCtrl {
 
     constructor() {}
 
-    getQueryFromRequest(req) {
-        
-        // On prépare un objet
-        var query = {};
-
-        // A-t-on un auteur ?
-        if(typeof req.query.author !== 'undefined' ) {
-            query.author = { _id : mongoose.Types.ObjectId(req.query.author) };
-        }
-
-        // A-t-on une source ?
-        if(typeof req.query.source !== 'undefined' ) {
-            query.source.item = { _id : mongoose.Types.ObjectId(req.query.source) };
-        }
-
-        // On renvoie l'objet
-        return query;
-    }
-
     getOptionsFromRequest(req) {
-        // On prépare un objet pour les options
-        var opts = { skip: 0, limit: 20, sort: { updatedAt: 'desc' } };
-
-        // A-t-on un champ pour le tri ?
-        if(typeof req.query.sort !== 'undefined') {
-            opts.sort = req.query.sort;
-        }      
-        // A-t-on une limite ?
-        if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
-            opts.limit = Number(req.query.size);
-        }
-
-        // A-t-on une page ?
-        if(typeof req.query.page !== 'undefined' && req.query.page >= 1) {
-            opts.skip = Number((req.query.page - 1) * req.query.size);
-        }
-
+        
          // On renvoie les options
          return opts;
     }
@@ -84,8 +49,23 @@ class CommentCtrl {
     }
 
     findAll(req, res, next) {
-        var query = this.getQueryFromRequest(req);
-        var opts = this.getOptionsFromRequest(req);
+        var query = {};
+        var opts = { skip: 0, limit: 20, sort: { updatedAt: 'desc' } };
+        if(typeof req.query.author !== 'undefined' ) {
+            query.author = { _id : mongoose.Types.ObjectId(req.query.author) };
+        }
+        if(typeof req.query.source !== 'undefined' ) {
+            query.source.item = { _id : mongoose.Types.ObjectId(req.query.source) };
+        }        
+        if(typeof req.query.sort !== 'undefined') {
+            opts.sort = req.query.sort;
+        }
+        if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
+            opts.limit = Number(req.query.size);
+        }
+        if(typeof req.query.page !== 'undefined' && req.query.page >= 1) {
+            opts.skip = Number((req.query.page - 1) * req.query.size);
+        }        
         
         return Promise.all([
             Comment

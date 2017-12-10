@@ -158,10 +158,6 @@ class TenderCtrl {
         }).catch(next);
     }
 
-    publish(req, res, next) {
-        return PublicationCtrl.publish(req, res, next,'tender');
-    }
-
     delete(req, res, next) {
         return PublicationCtrl.delete(req, res, next,'tender');
     }
@@ -173,7 +169,6 @@ class TenderCtrl {
         router.get('/:tender', auth.optional, this.findOne);
         router.post('/', auth.required, this.create);
         router.put('/:tender', auth.required, this.edit);
-        router.patch('/:tender', auth.required, this.publish);
         router.delete('/:tender', auth.required, this.delete);
         router.post('/:tender/close', auth.required, this.close);
         router.post('/:tender/cancel', auth.required, this.cancel);

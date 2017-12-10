@@ -129,10 +129,6 @@ class PropositionCtrl {
         return PublicationCtrl.edit(req, res, next,'proposition');
     }
 
-    publish(req, res, next) {
-        return PublicationCtrl.publish(req, res, next,'proposition');
-    }
-
     delete(req, res, next) {
         return PublicationCtrl.delete(req, res, next,'proposition');
     }
@@ -144,7 +140,6 @@ class PropositionCtrl {
         router.get('/:proposition', auth.optional, this.findOne);
         router.post('/', auth.required, this.create);
         router.put('/:proposition', auth.required, this.edit);
-        router.patch('/:proposition', auth.required, this.publish);
         router.delete('/:proposition', auth.required, this.delete);
         router.post('/:proposition/accept', auth.required, this.accept);
         router.post('/:proposition/reject', auth.required, this.reject);

@@ -108,7 +108,9 @@ class PublicationCtrl {
         .exec()
         .then(function(item) {
             if (!item) { return res.sendStatus(404); }            
-            return res.status(200).json({ item : item });
+            var result = {};
+            result[name] = item;
+            return res.status(200).json(result);
         }).catch(next);
     }
 
@@ -147,7 +149,7 @@ class PublicationCtrl {
             return model.create(item).then(function(newItem) {
                  // On crée un evenement
                  return Event
-                 .newEvent(`${ name }_created`, user, { kind: name, item: newItem })
+                 .newEvent(`${ name }_published`, user, { kind: name, item: newItem })
                  .then(function() {
                      var result = {};
                      result[name] = newItem;
@@ -166,6 +168,8 @@ class PublicationCtrl {
             if (!user) { return res.sendStatus(401); }
             // On contrôle que l'utilisateur soit bien l'auteur
             if(req[name].author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }            
+            // On récupére l'item préchargé
+            var item = req[name];
             // On met à jour l'item
             return mongoose.model(name)
             .findOneAndUpdate({_id: item._id }, { $set: req.body[name] }, { new: true })
@@ -173,33 +177,6 @@ class PublicationCtrl {
                 // On crée un evenement
                 return Event
                 .newEvent(`${ name }_updated`, user, { kind: name, item: newItem })
-                .then(function() {
-                    var result = {};
-                    result[name] = newItem;
-                    return res.status(200).json(result);
-                 });
-            });
-        }).catch(next);
-    }
-
-    publish(req, res, next, name) {
-        // On recherche l'utilisateur authentifié
-        return User
-        .findById(req.payload.id)
-        .then(function(user) {            
-            // Si aucun utilisateur trouvé, on renvoie un statut 401
-            if (!user) { return res.sendStatus(401); }
-            // On récupére l'item préchargé
-            var item = req[name];
-            // On contrôle que l'utilisateur soit bien l'auteur
-            if(item.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
-            // On met à jour l'item            
-            return mongoose.model(name)
-            .findOneAndUpdate({_id: item._id }, {$set: { publishedAt: Date.now() }})
-            .then(function(newItem) {
-                // On crée un evenement
-                return Event
-                .newEvent(`${ name }_published`, user, { kind: name, item: newItem })
                 .then(function() {
                     var result = {};
                     result[name] = newItem;

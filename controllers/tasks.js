@@ -138,10 +138,6 @@ class TaskCtrl {
         return PublicationCtrl.edit(req, res, next,'task');
     }
 
-    publish(req, res, next) {
-        return PublicationCtrl.publish(req, res, next,'task');
-    }
-
     delete(req, res, next) {
         return PublicationCtrl.delete(req, res, next,'task');
     }
@@ -153,7 +149,6 @@ class TaskCtrl {
         router.get('/:task', auth.optional, this.findOne);
         router.post('/', auth.required, this.create);
         router.put('/:task', auth.required, this.edit);
-        router.patch('/:task', auth.required, this.publish);
         router.delete('/:task', auth.required, this.delete);
         router.post('/:task/confirm', auth.required, this.confirm);
         router.post('/:task/pay', auth.required, this.pay);

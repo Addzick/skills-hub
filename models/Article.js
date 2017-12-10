@@ -55,6 +55,13 @@ ArticleSchema.pre('validate', function(next) {
   next();
 });
 
+ArticleSchema.pre('findOneAndUpdate', function(next) { 
+  this
+  .populate('author')
+  .populate('category');
+  next(); 
+});
+
 ArticleSchema.pre('findOne', function(next) { 
   this
   .populate('author')
