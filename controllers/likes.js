@@ -49,7 +49,7 @@ class LikeCtrl {
             query.author = { _id : mongoose.Types.ObjectId(req.query.author) };
         }
         if(typeof req.query.source !== 'undefined' ) {
-            query.source.item = { _id : mongoose.Types.ObjectId(req.query.source) };
+            query['source.item'] = mongoose.Types.ObjectId(req.query.source);
         }        
         if(typeof req.query.sort !== 'undefined') {
             opts.sort = req.query.sort;
@@ -60,7 +60,6 @@ class LikeCtrl {
         if(typeof req.query.page !== 'undefined' && req.query.page >= 1) {
             opts.skip = Number((req.query.page - 1) * req.query.size);
         }
-
         return Promise.all([
             Like
             .find(query, {}, opts)
@@ -70,7 +69,7 @@ class LikeCtrl {
             .exec()
         ]).then(function(results){ 
             return res.status(200).json({ 
-                comments: results[0],
+                likes: results[0],
                 count: results[1]
             });
         }).catch(next);

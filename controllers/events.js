@@ -24,22 +24,21 @@ class EventCtrl {
         if(typeof req.query.types !== 'undefined') {
             query.type = { '$in' : req.query.types };
         }
-
+        if(typeof req.query.source !== 'undefined' ) {
+            query['source.item'] = mongoose.Types.ObjectId(req.query.source);
+        }
         if(typeof req.query.excludes !== 'undefined') {
             query.type = { '$nin' : req.query.excludes };
-        }
-        
+        }        
         if(typeof req.query.startDate !== 'undefined' && typeof req.query.endDate !== 'undefined') {
             query.updatedAt = { 
                 $gte: new ISODate(req.query.startDate),
                 $lte: new ISODate(req.query.endDate)
             }
-        }
-        
+        }        
         if(typeof req.query.author !== 'undefined' ) {
             query.author = { _id : mongoose.Types.ObjectId(req.query.author) };
         }
-
         if(typeof req.query.localisation !== 'undefined') {
             query.source.kind = 'tender';
             query.source.item.address.loc = { 
@@ -53,20 +52,17 @@ class EventCtrl {
                     } 
                 } 
             }
-        }        
-                
+        }                
         if(typeof req.query.paginate !== 'undefined') {
             opts.sort = req.query.sort;
-        }  
-
+        }
         if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
             opts.limit = Number(req.query.size);
         }
-
         if(typeof req.query.page !== 'undefined' && req.query.page >= 1) {
             opts.skip = Number((req.query.page - 1) * req.query.size);
         }
-
+        
         return Promise.all([
             Event
             .find(query, {}, opts)
