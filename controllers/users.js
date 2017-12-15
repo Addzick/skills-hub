@@ -77,23 +77,6 @@ class UserCtrl {
        })(req, res, next);
     }
 
-    logout(req, res, next) {
-        // On recherche l'utilisateur authentifié
-        return User
-        .findById(req.payload.id)
-        .then(function(user) {
-            // Si aucun utilisateur trouvé, on renvoie un statut 401
-            if (user) {
-                return Event
-                .newEvent('user_disconnected', user, { kind: 'user', item: user })
-                .then(function() {
-                    return res.status(202);
-                });
-            }
-            return next();
-        }).catch(next);
-    }
-
     edit(req, res, next) {
         // On recherche l'utilisateur authentifié
         return User
@@ -259,7 +242,6 @@ class UserCtrl {
         var router = require('express').Router();
         router.post('/register', this.register);
         router.post('/login', this.login);
-        router.delete('/logout', auth.required, this.logout);
         router.get('/account', auth.required, this.get);
         router.post('/account', auth.required, this.edit);
         router.put('/account', auth.required, this.editAddress);
