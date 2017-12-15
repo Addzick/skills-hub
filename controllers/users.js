@@ -55,8 +55,8 @@ class UserCtrl {
 
     login(req, res, next) {
         // On contrôle la présence d'un email
-        if(!req.body.user.email) {
-            return res.status(422).json({ errors: { "email": "is required" }});
+        if(!req.body.user.username) {
+            return res.status(422).json({ errors: { "username": "is required" }});
         }
         // On contrôle la présence du mot de passe
         if(!req.body.user.password) {
