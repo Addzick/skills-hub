@@ -33,6 +33,7 @@ module.exports.initialization = function(server) {
       // On renvoie l'evenement avec ces sous-documents
       Event
       .findOne({ _id: newEvent._id})
-      .then(function(event) { io.sockets.emit('new event', event); }).catch(next);
+      .then(function(event) { io.sockets.emit('new event', event); })
+      .catch(next);
     });
 }

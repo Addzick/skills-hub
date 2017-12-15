@@ -20,6 +20,10 @@ class UserCtrl {
 
     register(req, res, next) {
         // On contrôle la présence d'un email
+        if(!req.body.user.username) {
+            return res.status(422).json({ errors: { "username": "is required" }});
+        }
+        // On contrôle la présence d'un email
         if(!req.body.user.email) {
             return res.status(422).json({ errors: { "email": "is required" }});
         }
@@ -28,11 +32,14 @@ class UserCtrl {
             return res.status(422).json({ errors: { "password": "is required" }});
         }
         // On crée un nouvel utilisateur
-        var user = new User(req.body.user);
+        var user = new User({
+            username: req.body.user.username,
+            email: req.body.user.email,
+            firstname: req.body.user.firstname,
+            lastname: req.body.user.lastname
+        });
         // On met à jour le nom d'utilisateur et le mot de passe
-        user.username = req.body.user.email;
         user.setPassword(req.body.user.password);
-        
         // On sauve le nouvel utilisateur
         return user
         .save()
@@ -76,13 +83,13 @@ class UserCtrl {
         .findById(req.payload.id)
         .then(function(user) {
             // Si aucun utilisateur trouvé, on renvoie un statut 401
-            if (!user) { return res.sendStatus(401); }
-            // On crée un evenement
-            return Event
-            .newEvent('user_disconnected', user, { kind: 'user', item: user })
-            .then(function() {
-                return res.status(200).json({ message : 'Au revoir et à bientôt' });
-            });
+            if (user) {
+                return Event
+                .newEvent('user_disconnected', user, { kind: 'user', item: user })
+                .then(function() {
+                    return res.status(202);
+                });
+            }
             return next();
         }).catch(next);
     }
@@ -145,24 +152,24 @@ class UserCtrl {
     get(req, res, next) {
         // On recherche l'utilisateur authentifié
         return User
-        .findOne({ _id: req.payload.id })
+        .findById(req.payload.id)
         .then(function(user) {
             // Aucun utilisateur, on renvoie un statut 401
             if(!user){ return res.sendStatus(401); }
             // On renvoie un statut OK et l'utilisateur correctement rempli
-            return res.status(200).json({ user: user });
+            return res.status(200).json({ user: user.toJSONFor(user) });
         }).catch(next);
     }
 
     findOne(req, res, next) {
-        // On recherche l'utilisateur authentifié
-        return User
-        .findOne({ _id: mongoose.Types.ObjectId(req.params.user) })
-        .then(function(user) {
-            // Aucun utilisateur, on renvoie un statut 401
-            if(!user){ return res.sendStatus(404); }
-            // On renvoie un statut OK et l'utilisateur correctement rempli
-            return res.status(200).json({ user: user });
+        return Promise.all([
+            req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(), 
+            User.findOne({ _id: mongoose.Types.ObjectId(req.params.user) }).exec()
+        ]).then(function(results) {
+            if (!results || results.length < 2) { return res.sendStatus(404); }
+            return res.status(200).json({ 
+                user: results[1].toJSONFor(results[0])
+            });
         }).catch(next);
     }
 
@@ -200,8 +207,8 @@ class UserCtrl {
                 } 
             }
         }        
-        if(typeof req.query.paginate !== 'undefined') {
-            opts.sort = req.query.sort;
+        if(typeof req.query.sortBy !== 'undefined') {
+            opts.sort[req.query.sortBy] = req.query.sortDir || 'asc';
         }      
         if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
             opts.limit = Number(req.query.size);
@@ -210,12 +217,20 @@ class UserCtrl {
             opts.skip = Number((req.query.page - 1) * req.query.size);
         }
 
-        return User
-        .find(query, {}, opts)
-        .exec()
-        .then(function(users) {
-            if(!users){ return res.sendStatus(401); }
-            return res.status(200).json({ users: users });
+        return Promise.all([
+            req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(),
+            User.find(query, {}, opts).exec(),
+            User.count(query).exec()
+        ]).then(function(results){ 
+            var user = results[0];
+            var users = results[1];
+            var nb = results[2];
+            return res.status(200).json({ 
+                users: users.map(function(u) {
+                    return u.toJSONFor(user);
+                }),
+                count: nb
+            });
         }).catch(next);
     }
 

@@ -17,19 +17,23 @@ var CategorySchema = new mongoose.Schema({
     path: String,
     photo: String,
     video: String,
-}, {
-  timestamps: true,
-  toObject: {
-    transform: function(doc, ret){
-      delete ret.__v;
-    }
-  },
-  toJSON: {
-    transform: function(doc, ret){
-      delete ret.__v;
-    }
-  }
-});
+}, { timestamps: true });
+
+// Défition du traitement pour le retour d'un objet JSON pour un utilisateur spécifié
+CategorySchema.methods.toJSONFor = function(user) {
+  return {
+    _id: this._id.toString(),
+    title: this.title,
+    description: this.description,
+    parent: this.parent,
+    path: this.path,
+    photo: this.photo,
+    video: this.video,
+    createdAt: this.createdAt,
+    updatedAt: this.updatedAt,
+    isFavorite: user && user.isFavorite(this._id)
+  };
+};
 
 // Attribution du schéma au modèle de categorie
 module.exports = mongoose.model('category', CategorySchema);

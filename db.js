@@ -13,18 +13,17 @@ const mongoose = require('mongoose');
 const config = require('./config/index');
 
 // Récupération des modèles Mongoose utilisés par l'application
-const Address = require('./models/Address');
-const Article = require('./models/Article');
 const Category = require('./models/Category');
+const Address = require('./models/Address');
+const User = require('./models/User');
+const Like = require('./models/Like');
 const Comment = require('./models/Comment');
 const Event = require('./models/Event');
-const Like = require('./models/Like');
-const Notification = require('./models/Notification');
+const Article = require('./models/Article');
 const Proposition = require('./models/Proposition');
 const Rating = require('./models/Rating');
 const Task = require('./models/Task');
 const Tender = require('./models/Tender');
-const User = require('./models/User');
 
 // Définition des catégories par défaut
 const categories = [

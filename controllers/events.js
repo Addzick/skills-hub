@@ -9,6 +9,7 @@
 const auth = require('../config/auth');
 const mongoose = require('mongoose');
 const Event = mongoose.model('event');
+const User = mongoose.model('user');
 
 // Définition du controleur
 class EventCtrl {
@@ -53,8 +54,8 @@ class EventCtrl {
                 } 
             }
         }                
-        if(typeof req.query.paginate !== 'undefined') {
-            opts.sort = req.query.sort;
+        if(typeof req.query.sortBy !== 'undefined') {
+            opts.sort[req.query.sortBy] = req.query.sortDir || 'asc';
         }
         if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
             opts.limit = Number(req.query.size);
@@ -64,28 +65,35 @@ class EventCtrl {
         }
         
         return Promise.all([
-            Event
-            .find(query, {}, opts)
-            .exec(),
-            Event
-            .count(query)
-            .exec()
+            req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(),
+            Event.find(query, {}, opts).exec(),
+            Event.count(query).exec()
         ]).then(function(results){ 
+            var user = results[0];
+            var events = results[1];
+            var nb = results[2];
+            
             return res.status(200).json({ 
-                events: results[0],
-                count: results[1]
+                events: events.map(function(evt) {
+                    return evt.toJSONFor(user);                   
+                }),
+                count: nb
             });
         }).catch(next);
     }
 
     findOne(req, res, next) {
-        // On recherche l'évènement correspondant
-        return Event
-        .findOne({ _id: mongoose.Types.ObjectId(req.params.event)})
-        .then(function(event){
-            if(!event) { return res.sendStatus(404); }
-            return res.status(200).json({ event: event });
-        }).catch(next);
+        return Promise.all([
+            req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(),
+            Event.findOne({ _id: mongoose.Types.ObjectId(req.params.event)}).exec()
+        ])
+        .then(function(results) {
+            if (!results || results.length < 2) { return res.sendStatus(404); }
+            return res.status(200).json({
+                event : result[1].toJSONFor(result[0])
+            });
+        })
+        .catch(next);
     }
 
     getRoutes() {

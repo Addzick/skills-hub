@@ -9,6 +9,7 @@
 const mongoose = require('mongoose');
 const auth = require('../config/auth');
 const Category = mongoose.model('category');
+const User = mongoose.model('user');
 
 // Définition du controleur
 class CategoryCtrl {
@@ -17,20 +18,25 @@ class CategoryCtrl {
     }
 
     findAll(req, res, next) {
-        // On renvoie le résultat après execution des requêtes
-        return Category.find({}).then(function(categories){
-            if(!categories) return res.sendStatus(404);
-            return res.status(200).json({ categories: categories });
+        return Promise.all([
+            req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(),
+            Category.find({}).exec()
+        ]).then(function(results) {
+            return res.status(200).json({ 
+                categories: results[1].map((cat) => cat.toJSONFor(results[0])) 
+            });
         }).catch(next);
     }
 
     findOne(req, res, next) {
-        // On recherche la categorie correspondante
-        return Category
-        .findOne({ _id: mongoose.Types.ObjectId(req.params.category)})
-        .then(function(category){
-            if(!category) { return res.sendStatus(404); }
-            return res.status(200).json({ category: category });
+        return Promise.all([
+            req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(), 
+            Category.findOne({ _id: mongoose.Types.ObjectId(req.params.category)}).exec()
+        ]).then(function(results) {
+            if(!categories) return res.sendStatus(404);
+            return res.status(200).json({ 
+                category: results[1].toJSONFor(results[0]) 
+            });
         }).catch(next);
     }
 

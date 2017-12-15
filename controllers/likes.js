@@ -18,27 +18,25 @@ class LikeCtrl {
     constructor() {}
 
    preload(req, res, next) {
-        // On recherche le like correspondant
-        return Like
-        .findOne({_id: mongoose.Types.ObjectId(req.params.like)})
-        .then(function(like) {
-            // Si aucun like trouvé, on renvoie une erreur 404
-            if(!like) { return res.sendStatus(404); }        
-            // On remplit la requête avec le like trouvé
-            req.like = like;
-            // On continue l'execution
-            return next();
-          }).catch(next);
+       return Like
+       .findOne({_id: mongoose.Types.ObjectId(req.params.like)})
+       .then(function(like) {
+           if(!like) { return res.sendStatus(404); }
+           req.like = like;
+           return next();
+        })
+        .catch(next);
     }
 
     findOne(req, res, next) {
-        // On execute la requête de sélection et on renvoie le résultat
-        return Like
-        .findOne({_id: mongoose.Types.ObjectId(req.params.like)})
-        .exec()
-        .then(function(item) {
-            if (!item) { return res.sendStatus(404); }            
-            return res.status(200).json({ like : item });
+        return Promise.all([
+            req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(), 
+            Like.findOne({_id: mongoose.Types.ObjectId(req.params.like)}).exec()
+        ]).then(function(results) {
+            if (!results || results.length < 2) { return res.sendStatus(404); }
+            return res.status(200).json({ 
+                like: results[1].toJSONFor(results[0])
+            });
         }).catch(next);
     }   
 
@@ -51,8 +49,8 @@ class LikeCtrl {
         if(typeof req.query.source !== 'undefined' ) {
             query['source.item'] = mongoose.Types.ObjectId(req.query.source);
         }        
-        if(typeof req.query.sort !== 'undefined') {
-            opts.sort = req.query.sort;
+        if(typeof req.query.sortBy !== 'undefined') {
+            opts.sort[req.query.sortBy] = req.query.sortDir || 'asc';
         }
         if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
             opts.limit = Number(req.query.size);
@@ -61,16 +59,18 @@ class LikeCtrl {
             opts.skip = Number((req.query.page - 1) * req.query.size);
         }
         return Promise.all([
-            Like
-            .find(query, {}, opts)
-            .exec(),
-            Like
-            .count(query)
-            .exec()
+            req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(),
+            Like.find(query, {}, opts).exec(),
+            Like.count(query).exec()
         ]).then(function(results){ 
+            var user = results[0];
+            var likes = results[1];
+            var nb = results[2];
             return res.status(200).json({ 
-                likes: results[0],
-                count: results[1]
+                likes: likes.map(function(like) {
+                    return like.toJSONFor(user);
+                }),
+                count: nb
             });
         }).catch(next);
     }
@@ -91,14 +91,15 @@ class LikeCtrl {
              .then(function(like) {                
                 // On ajoute le like à la source
                 return mongoose.model(like.source.kind)
-                .findOneAndUpdate({_id: mongoose.Types.ObjectId(like.source.item) }, { $push: { likes: like._id }, $inc: { nbLikes : 1 } })
+                .findOneAndUpdate({_id: mongoose.Types.ObjectId(like.source.item) }, { $push: { likes: like._id }, $inc: { nbLikes : 1 } }, { new: true })
                 .then(function(item) {
                     // On crée un evenement
-                    console.log(item);
                     return Event
                     .newEvent(`${ like.source.kind }_liked`, user, { kind: 'like', item: like })
                     .then(function() {
-                        return res.status(200).json({ like: like });
+                        return Like.findById(like._id).then(li => {
+                            return res.status(200).json({ like: li.toJSONFor(user) });
+                        });
                     });
                 });
             });
@@ -118,11 +119,15 @@ class LikeCtrl {
             .then(function(like) {
                 // On supprime le lien avec la source
                 return mongoose.model(like.source.kind)
-                .findOneAndUpdate({ _id: like.source.item._id }, { $pull: { likes: like }, $inc: { nbLikes : -1 }})
-                .then(function() {
-                    // On crée un evenement
-                    Event
-                    .newEvent(`${ like.source.kind }_unliked`, user, { kind: 'like', item: like })
+                .findOneAndUpdate({ _id: mongoose.Types.ObjectId(like.source.item) }, { 
+                    $pull: { likes: like._id }, 
+                    $inc: { nbLikes : -1 }
+                },{ 
+                    new: true
+                })
+                .then(function(item) {
+                    return Event
+                    .findOneAndRemove({ source: { kind: 'like', item: like._id}})
                     .then(function() {
                         return res.sendStatus(202);
                     });

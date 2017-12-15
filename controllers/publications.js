@@ -56,8 +56,8 @@ class PublicationCtrl {
         var opts = { skip: 0, limit: 20, sort: { createdAt: 'desc' } };
 
         // A-t-on un champ pour le tri ?
-        if(typeof req.query.sort !== 'undefined') {
-            opts.sort = req.query.sort;
+        if(typeof req.query.sortBy !== 'undefined') {
+            opts.sort[req.query.sortBy] = req.query.sortDir || 'asc';
         }      
         // A-t-on une limite ?
         if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
@@ -102,33 +102,35 @@ class PublicationCtrl {
     }
 
     findOne(req, res, next, name) {
-        // On execute la requête de sélection et on renvoie le résultat
-        return mongoose.model(name)
-        .findOne({_id: mongoose.Types.ObjectId(req.params[name])})
-        .exec()
-        .then(function(item) {
-            if (!item) { return res.sendStatus(404); }            
-            var result = {};
-            result[name] = item;
-            return res.status(200).json(result);
-        }).catch(next);
+        return Promise.all([
+            req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(),
+            mongoose.model(name).findOne({_id: mongoose.Types.ObjectId(req.params[name])}).exec()
+        ])
+        .then(function(results) {
+            if (!results || results.length < 2) { return res.sendStatus(404); }
+            var wrapper = {};
+            wrapper[name] = results[1].toJSONFor(results[0])
+            return res.status(200).json(wrapper);
+        })
+        .catch(next);
     }
 
     findAll(req, res, next, name) {
         var query = this.getQueryFromRequest(req);
         var opts = this.getOptionsFromRequest(req); 
-
         return Promise.all([
-            mongoose.model(name)
-            .find(query, {}, opts)
-            .exec(),
-            mongoose.model(name)
-            .count(query)
-            .exec()
-        ]).then(function(results){ 
+            req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(),
+            mongoose.model(name).find(query, {}, opts).exec(),
+            mongoose.model(name).count(query).exec()
+        ]).then(function(results) { 
+            var user = results[0];
+            var pubs = results[1];
+            var nb = results[2];
             return res.status(200).json({ 
-                items: results[0],
-                count: results[1]
+                items: pubs.map(function(pub) {
+                    return pub.toJSONFor(user);
+                }),
+                count: nb
             });
         }).catch(next);
     }
@@ -151,9 +153,11 @@ class PublicationCtrl {
                  return Event
                  .newEvent(`${ name }_published`, user, { kind: name, item: newItem })
                  .then(function() {
-                     var result = {};
-                     result[name] = newItem;
-                     return res.status(200).json(result);
+                    return model.findById(item._id).then(itm => {
+                        var result = {};
+                        result[name] = itm.toJSONFor(user);
+                        return res.status(200).json(result);
+                    });
                  });
             });
         }).catch(next);
@@ -198,13 +202,8 @@ class PublicationCtrl {
             // On supprime l'item
             return mongoose.model(name)
             .findByIdAndRemove(article._id)
-            .then(function(itemDeleted) {
-                // On crée un evenement
-                return Event
-                .newEvent(`${ name }_deleted`, user, { kind: name, item: itemDeleted })
-                .then(function() {
-                    return res.sendStatus(202);
-                 });
+            .then(function() {
+                return res.sendStatus(202);
             });
         }).catch(next);
     }

@@ -17,12 +17,6 @@ class CommentCtrl {
 
     constructor() {}
 
-    getOptionsFromRequest(req) {
-        
-         // On renvoie les options
-         return opts;
-    }
-
     preload(req, res, next) {
         // On recherche le commentaire correspondant
         return Comment
@@ -38,13 +32,14 @@ class CommentCtrl {
     }
 
     findOne(req, res, next) {
-        // On execute la requête de sélection et on renvoie le résultat
-        return Comment
-        .findOne({_id: mongoose.Types.ObjectId(req.params.comment)})
-        .exec()
-        .then(function(item) {
-            if (!item) { return res.sendStatus(404); }            
-            return res.status(200).json({ comment : item });
+        return Promise.all([
+            req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(), 
+            Comment.findOne({_id: mongoose.Types.ObjectId(req.params.comment)}).exec()
+        ]).then(function(results) {
+            if (!results || results.length < 2) { return res.sendStatus(404); }
+            return res.status(200).json({ 
+                comment: results[1].toJSONFor(results[0])
+            });
         }).catch(next);
     }
 
@@ -57,26 +52,29 @@ class CommentCtrl {
         if(typeof req.query.source !== 'undefined' ) {
             query['source.item'] = mongoose.Types.ObjectId(req.query.source);
         }        
-        if(typeof req.query.sort !== 'undefined') {
-            opts.sort = req.query.sort;
+        if(typeof req.query.sortBy !== 'undefined') {
+            opts.sort[req.query.sortBy] = req.query.sortDir || 'asc';
         }
         if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
             opts.limit = Number(req.query.size);
         }
         if(typeof req.query.page !== 'undefined' && req.query.page >= 1) {
             opts.skip = Number((req.query.page - 1) * req.query.size);
-        }        
+        } 
+               
         return Promise.all([
-            Comment
-            .find(query, {}, opts)
-            .exec(),
-            Comment
-            .count(query)
-            .exec()
+            req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(),
+            Comment.find(query, {}, opts).exec(),
+            Comment.count(query).exec()
         ]).then(function(results){ 
+            var user = results[0];
+            var comments = results[1];
+            var nb = results[2];
             return res.status(200).json({ 
-                comments: results[0],
-                count: results[1]
+                comments: comments.map(function(comment) {
+                    return comment.toJSONFor(user);
+                }),
+                count: nb
             });
         }).catch(next);
     }
@@ -96,13 +94,15 @@ class CommentCtrl {
              }).then(function(comment) {                
                 // On ajoute le commentaire à la source
                 return mongoose.model(comment.source.kind)
-                .findOneAndUpdate({ _id: mongoose.Types.ObjectId(comment.source.item) }, { $push: { comments: comment._id }, $inc: { nbComments : 1 }})
+                .findOneAndUpdate({ _id: mongoose.Types.ObjectId(comment.source.item) }, { $push: { comments: comment._id }, $inc: { nbComments : 1 }}, { new: true })
                 .then(function() {
                     // On crée un evenement
                     return Event
                     .newEvent(`${ comment.source.kind }_commented`, user, { kind: 'comment', item: comment })
                     .then(function() {
-                        return res.status(200).json({ comment: comment });
+                        return Comment.findOne({_id: mongoose.Types.ObjectId(comment._id) }).then(com => {
+                            return res.status(200).json({ comment: com.toJSONFor(user) });
+                        });
                     });
                 });
             });
@@ -117,14 +117,20 @@ class CommentCtrl {
             // Si aucun utilisateur n'a été trouvé, on renvoie un statut 401
             if(!user) { return res.sendStatus(401); }
             // On supprime le commentaire
-            return Comment.findByIdAndRemove(req.comment._id).then(function(comment) {
+            return Comment
+            .findByIdAndRemove(req.comment._id)
+            .then(function(comment) {
                 // On supprime le lien avec la source
                 return mongoose.model(comment.source.kind)
-                .findOneAndUpdate({ _id: comment.source.item._id }, { $pull: { comments: comment }, $inc: { nbComments : -1 }})
-                .then(function() {
-                    // On crée un evenement
+                .findOneAndUpdate({ _id: mongoose.Types.ObjectId(comment.source.item) }, { 
+                    $pull: { comments: req.comment._id }, 
+                    $inc: { nbComments : -1 }
+                },{ 
+                    new: true
+                })
+                .then(function(item) {
                     return Event
-                    .newEvent(`${ comment.source.kind }_uncommented`, user, { kind: 'comment', item: comment })
+                    .findOneAndRemove({ source: { kind: 'comment', item: comment._id}})
                     .then(function() {
                         return res.sendStatus(202);
                     });

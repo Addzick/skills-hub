@@ -16,7 +16,7 @@ var secret = require('../config').secret;
 
 // Définition du schéma d'un utilisateur
 var UserSchema = new mongoose.Schema({
-  username: {type: String, lowercase: true, unique: true, required: [true, "is required"], match: [/\S+@\S+\.\S+/, 'is invalid'], index: true},
+  username: {type: String, lowercase: true, unique: true, required: [true, "is required"], match: [/^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$/, 'is invalid'], index: true},
   email: {type: String, lowercase: true, unique: true, required: [true, "is required"], match: [/\S+@\S+\.\S+/, 'is invalid'], index: true},
   abo: { type: String, lowercase: true, required: true, default: 'bronze', enum: ['bronze', 'silver', 'gold', 'platine', 'diamond']},
   lastname: String,
@@ -35,30 +35,16 @@ var UserSchema = new mongoose.Schema({
   timestamps: true,
   toObject: {
     transform: function(doc, ret){
-      delete ret.username;
       delete ret.hash;
       delete ret.salt;
-      delete ret.__v;
-      if(doc.firstname !== undefined ||  doc.lastname !== undefined) {
-        ret.displayName = (doc.firstname !== undefined ? doc.firstname : '') + (doc.lastname !== undefined ? ' ' + doc.lastname : '')
-      } 
-      else{
-        ret.displayName = 'Utilisateur anonyme'
-      }     
+      delete ret.__v;  
     }
   },
   toJSON: {
     transform: function(doc, ret){
-      delete ret.username;
       delete ret.hash;
       delete ret.salt;
-      delete ret.__v;
-      if(doc.firstname !== undefined ||  doc.lastname !== undefined) {
-        ret.displayName = (doc.firstname !== undefined ? doc.firstname : '') + (doc.lastname !== undefined ? ' ' + doc.lastname : '')
-      } 
-      else{
-        ret.displayName = 'Utilisateur anonyme'
-      }  
+      delete ret.__v; 
     }
   }
 });
@@ -66,22 +52,33 @@ var UserSchema = new mongoose.Schema({
 // Définition du plugin utilisé pour la validation des champs uniques
 UserSchema.plugin(uniqueValidator, { message: 'is already taken.' });
 
-// Définition des hooks
-UserSchema.pre('findOne', function(next) { 
-  this
-  .populate('address')
-  .populate({
-    path: 'favorites',
-    options: {
-        sort: {
-            title: 'asc'
-        }
-    }
-  });
-  next(); 
-});
+// Définition du traitement pour le retour d'un objet JSON pour un utilisateur spécifié
+UserSchema.methods.toJSONFor = function(user) {
+  const displayName = (this.firstname !== undefined ||  this.lastname !== undefined) 
+  ? (this.firstname !== undefined ? this.firstname : '') + (this.lastname !== undefined ? ' ' + this.lastname : '') 
+  : 'Utilisateur anonyme';
+  return {
+    _id: this._id.toString(),
+    username: this.username,
+    email: this.email,
+    abo: this.abo,
+    lastname: this.lastname,
+    firstname: this.firstname,
+    displayName: displayName,
+    bio: this.bio,
+    image: this.image,
+    address: this.address ? this.address.toJSONFor() : this.address,
+    favorites: this.favorites && user ? this.favorites.map((fav) => fav.toJSONFor(user)) : this.favorites,
+    nbStars: this.nbStars,
+    createdAt: this.createdAt,
+    updatedAt: this.updatedAt,
+    isConnected: this.connection !== '',
+    canEdit: user && user.isMine(this._id)
+  };
+};
 
-UserSchema.pre('find', function(next) { 
+// Définition des hooks
+var autoPopulate = function(next) {
   this
   .populate('address')
   .populate({
@@ -93,7 +90,10 @@ UserSchema.pre('find', function(next) {
     }
   });
   next();
-});
+};
+UserSchema.pre('findOneAndUpdate', autoPopulate);
+UserSchema.pre('findOne', autoPopulate);
+UserSchema.pre('find', autoPopulate);
 
 // Définition de la méthode utilisée pour mettre à jour le mot de passe d'un utilisateur
 UserSchema.methods.setPassword = function(password){
@@ -126,6 +126,17 @@ UserSchema.methods.generateJWT = function() {
     username: this.username,
     exp: parseInt(exp.getTime() / 1000),
   }, secret);
+};
+
+// Définition due la méthode de contrôle si une catégorie est favorie
+UserSchema.methods.isFavorite = function(id){
+  return this.favorites.some(function(cat){
+    return cat.toString() === id.toString();
+  });
+};
+
+UserSchema.methods.isMine = function(id){
+  return this._id.toString() === id.toString();
 };
 
 // Attribution du schéma au modèle d'utilisateur
