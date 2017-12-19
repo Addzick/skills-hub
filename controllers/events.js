@@ -17,6 +17,20 @@ class EventCtrl {
     constructor() {
     }
 
+    findOne(req, res, next) {
+        return Promise.all([
+            req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(),
+            Event.findOne({ _id: mongoose.Types.ObjectId(req.params.event)}).exec()
+        ])
+        .then(function(results) {
+            if (!results || results.length < 2) { return res.sendStatus(404); }
+            return res.status(200).json({
+                event : result[1].toJSONFor(result[0])
+            });
+        })
+        .catch(next);
+    }
+
     findAll(req, res, next) {
 
         var query = {};
@@ -80,20 +94,6 @@ class EventCtrl {
                 count: nb
             });
         }).catch(next);
-    }
-
-    findOne(req, res, next) {
-        return Promise.all([
-            req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(),
-            Event.findOne({ _id: mongoose.Types.ObjectId(req.params.event)}).exec()
-        ])
-        .then(function(results) {
-            if (!results || results.length < 2) { return res.sendStatus(404); }
-            return res.status(200).json({
-                event : result[1].toJSONFor(result[0])
-            });
-        })
-        .catch(next);
     }
 
     getRoutes() {
