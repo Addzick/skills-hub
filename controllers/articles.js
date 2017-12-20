@@ -14,18 +14,6 @@ class ArticleCtrl {
     constructor(){
     }
 
-    getTags(req, res, next) {
-        return Article.find({})
-        .distinct('tags')
-        .exec()
-        .then(function(tags) {
-            // On renvoie la liste des tags
-            return res.status(200).json({
-                tags: tags
-            });
-        }).catch(next);
-    }
-
     getQueryFromRequest(req){
         var query = PublicationCtrl.getQueryFromRequest(req);
         // A-t-on des tags ?  
@@ -67,7 +55,6 @@ class ArticleCtrl {
         router.post('/', auth.required, this.create);
         router.put('/:article', auth.required, this.edit);
         router.delete('/:article', auth.required, this.delete);
-        router.get('/tags', auth.optional, this.getTags);
         return router;
     }
 }

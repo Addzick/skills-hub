@@ -10,6 +10,7 @@ const mongoose = require('mongoose');
 const auth = require('../config/auth');
 const Category = mongoose.model('category');
 const User = mongoose.model('user');
+const Tender = mongoose.model('tender');
 
 // Définition du controleur
 class CategoryCtrl {
@@ -18,12 +19,38 @@ class CategoryCtrl {
     }
 
     findAll(req, res, next) {
+        var opts = { skip: 0, limit: 20, sort: { createdAt: 'desc' } };
+        if(typeof req.query.sortBy !== 'undefined') { 
+            opts.sort[req.query.sortBy] = req.query.sortDir || 'asc'; 
+        }
+        if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
+            opts.limit = Number(req.query.size);
+        }
+        if(typeof req.query.page !== 'undefined' && req.query.page >= 1) {
+            opts.skip = Number((req.query.page - 1) * req.query.size);
+        }
+        
+        ;
+
         return Promise.all([
             req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(),
-            Category.find({}).exec()
+            Category.find({}, {}, opts).exec(),
+            Tender.aggregate([{
+                $group : {
+                    _id : "$category",
+                    "count" :  { $sum : 1 }
+                }
+            }])
         ]).then(function(results) {
-            return res.status(200).json({ 
-                categories: results[1].map((cat) => cat.toJSONFor(results[0])) 
+            var user = results[0];
+            var categories = results[1];
+            var counts = results[2];
+            return res.status(200).json({
+                categories: categories.map((cat) => {
+                    const c = cat.toJSONFor(user);
+                    c['nbTenders'] = counts.find(nb => nb._id.toString() === c._id.toString());
+                    return c;
+                })
             });
         }).catch(next);
     }
