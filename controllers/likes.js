@@ -16,14 +16,14 @@ const Like = mongoose.model('like');
 class LikeCtrl {   
 
     constructor() {}
-
-   preload(req, res, next) {
-       return Like
-       .findOne({_id: mongoose.Types.ObjectId(req.params.like)})
-       .then(function(like) {
-           if(!like) { return res.sendStatus(404); }
-           req.like = like;
-           return next();
+   
+    preload(req, res, next) {
+        return Like
+        .findOne({_id: mongoose.Types.ObjectId(req.params.like)})
+        .then(function(like) {
+            if(!like) { return res.sendStatus(404); }
+            req.like = like;
+            return next();
         })
         .catch(next);
     }
@@ -91,13 +91,15 @@ class LikeCtrl {
              .then(function(like) {                
                 // On ajoute le like à la source
                 return mongoose.model(like.source.kind)
-                .findOneAndUpdate({_id: mongoose.Types.ObjectId(like.source.item) }, { $push: { likes: like._id }, $inc: { nbLikes : 1 } }, { new: true })
-                .then(function(item) {
+                .findOneAndUpdate(
+                    {_id: mongoose.Types.ObjectId(like.source.item) }, 
+                    { $push: { likes: like._id }, $inc: { nbLikes : 1 } })
+                .then(function() {
                     // On crée un evenement
                     return Event
                     .newEvent(`${ like.source.kind }_liked`, user, { kind: 'like', item: like })
                     .then(function() {
-                        return Like.findById(like._id).then(li => {
+                        return Like.findOne({_id: mongoose.Types.ObjectId(like._id) }).then(li => {
                             return res.status(200).json({ like: li.toJSONFor(user) });
                         });
                     });
@@ -119,17 +121,16 @@ class LikeCtrl {
             .then(function(like) {
                 // On supprime le lien avec la source
                 return mongoose.model(like.source.kind)
-                .findOneAndUpdate({ _id: mongoose.Types.ObjectId(like.source.item) }, { 
-                    $pull: { likes: like._id }, 
-                    $inc: { nbLikes : -1 }
-                },{ 
-                    new: true
-                })
+                .findOneAndUpdate(
+                    { _id: mongoose.Types.ObjectId(like.source.item) }, 
+                    { $pull: { likes: like._id }, $inc: { nbLikes : -1 }},
+                    { new: true})
                 .then(function(item) {
+                    console.log(item);
                     return Event
                     .findOneAndRemove({ source: { kind: 'like', item: like._id}})
-                    .then(function() {
-                        return res.sendStatus(202);
+                    .then(function() {                        
+                        return res.status(200).json({ source: { kind: like.source.kind, item: item.toJSONFor(user)}});
                     });
                 });
             });
@@ -142,7 +143,7 @@ class LikeCtrl {
         router.get('/', auth.optional, this.findAll);
         router.get('/:like', auth.optional, this.findOne);
         router.post('/', auth.required, this.like);
-        router.delete('/:like', auth.required, this.unlike);
+        router.post('/:like', auth.required, this.unlike);
         return router;
     }
 }

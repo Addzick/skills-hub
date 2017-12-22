@@ -94,7 +94,10 @@ class CommentCtrl {
              }).then(function(comment) {                
                 // On ajoute le commentaire à la source
                 return mongoose.model(comment.source.kind)
-                .findOneAndUpdate({ _id: mongoose.Types.ObjectId(comment.source.item) }, { $push: { comments: comment._id }, $inc: { nbComments : 1 }}, { new: true })
+                .findOneAndUpdate(
+                    { _id: mongoose.Types.ObjectId(comment.source.item) }, 
+                    { $push: { comments: comment._id }, $inc: { nbComments : 1 }}, 
+                    { new: true })
                 .then(function() {
                     // On crée un evenement
                     return Event
@@ -122,17 +125,15 @@ class CommentCtrl {
             .then(function(comment) {
                 // On supprime le lien avec la source
                 return mongoose.model(comment.source.kind)
-                .findOneAndUpdate({ _id: mongoose.Types.ObjectId(comment.source.item) }, { 
-                    $pull: { comments: req.comment._id }, 
-                    $inc: { nbComments : -1 }
-                },{ 
-                    new: true
-                })
+                .findOneAndUpdate(
+                    { _id: mongoose.Types.ObjectId(comment.source.item) },
+                    { $pull: { comments: req.comment._id }, $inc: { nbComments : -1 }},
+                    { new: true })
                 .then(function(item) {
                     return Event
                     .findOneAndRemove({ source: { kind: 'comment', item: comment._id}})
                     .then(function() {
-                        return res.sendStatus(202);
+                        return res.status(200).json({ source: { kind: comment.source.kind, item: item.toJSONFor(user)}});
                     });
                 });
             });
@@ -145,7 +146,7 @@ class CommentCtrl {
         router.get('/', auth.optional, this.findAll);
         router.get('/:comment', auth.optional, this.findOne);
         router.post('/', auth.required, this.comment);
-        router.delete('/:comment', auth.required, this.uncomment);
+        router.post('/:comment', auth.required, this.uncomment);
         return router;
     }
 }

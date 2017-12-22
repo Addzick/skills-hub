@@ -147,6 +147,10 @@ class PublicationCtrl {
             var item = new model(req.body[name]);
             // On définit l'auteur
             item.author = user;
+            // On définit l'adresse par défaut
+            if(name == 'tender' && (!item.address || typeof item.address == 'undefined')){
+                item.address = user.address;
+            }
             // On crée l'item
             return model.create(item).then(function(newItem) {
                  // On crée un evenement
@@ -174,6 +178,10 @@ class PublicationCtrl {
             if(req[name].author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }            
             // On récupére l'item préchargé
             var item = req[name];
+            // On définit l'adresse par défaut
+            if(name == 'tender' && (!item.address || typeof item.address == 'undefined')){
+                item.address = user.address;
+            }
             // On met à jour l'item
             return mongoose.model(name)
             .findOneAndUpdate({_id: item._id }, { $set: req.body[name] }, { new: true })

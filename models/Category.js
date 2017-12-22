@@ -31,7 +31,8 @@ CategorySchema.methods.toJSONFor = function(user) {
     video: this.video,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,
-    isFavorite: user && user.isFavorite(this._id)
+    isFavorite: user && user.isFavorite(this._id),
+    nbTenders: 0
   };
 };
 

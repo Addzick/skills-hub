@@ -36,10 +36,14 @@ var TenderSchema = new mongoose.Schema({
 // Définition du traitement pour le retour d'un objet JSON pour un utilisateur spécifié
 TenderSchema.methods.toJSONFor = function(user) {
   const myLike = this.likes.find(like => like && user && user.isMine(like.author._id));
+  const myProposition = this.propositions.find(prop => prop && user && user.isMine(prop.author._id));
   const acceptedProp = this.propositions.find(prop => prop.acceptedAt);
-  const isOpened = !this.closedAt && !this.canceledAt && this.validityStart && this.validityEnd && this.validityStart >= Date.now() && this.validityEnd <= Date.now();;
-  const canEdit = !this.closedAt && !acceptedProp && user && user.isMine(this.author._id);
-  const canPropose = isOpened && !acceptedProp && (!this.isPrivate || (user && user.isMine(like.author._id)));
+  const isClosed = this.closedAt && typeof this.closedAt !== 'undefined';
+  const isCanceled = this.canceledAt && typeof this.canceledAt !== 'undefined';
+  const isOpened = !isClosed && !isCanceled && new Date(this.validityStart) <= Date.now() && new Date(this.validityEnd) >= Date.now();
+
+  const canEdit = !isClosed && !acceptedProp && user && user.isMine(this.author._id);
+  const canPropose = isOpened && !acceptedProp && !myProposition && (!this.isPrivate || (this.isPrivate && this.target && user && user.isMine(this.target._id)));
 
   return {
     _id: this._id.toString(),
@@ -63,7 +67,10 @@ TenderSchema.methods.toJSONFor = function(user) {
     closedAt: this.closedAt,
     canceledAt: this.canceledAt,
     myLike: myLike,
+    myProposition: myProposition,
     acceptedProp: acceptedProp,
+    isClosed: isClosed,
+    isCanceled: isCanceled,
     isOpened: isOpened,
     canEdit: canEdit,
     canPropose: canPropose

@@ -40,16 +40,19 @@ class CategoryCtrl {
                     _id : "$category",
                     "count" :  { $sum : 1 }
                 }
-            }])
+            }]).exec()
         ]).then(function(results) {
             var user = results[0];
             var categories = results[1];
             var counts = results[2];
             return res.status(200).json({
-                categories: categories.map((cat) => {
-                    const c = cat.toJSONFor(user);
-                    c['nbTenders'] = counts.find(nb => nb._id.toString() === c._id.toString());
-                    return c;
+                categories: categories.map((category) => {
+                    const cat = category.toJSONFor(user);
+                    const nb = counts.find(t => t._id.toString() == cat._id.toString());
+                    if(nb && typeof nb != 'undefined') {
+                        cat.nbTenders = nb.count;
+                    }
+                    return cat;
                 })
             });
         }).catch(next);
