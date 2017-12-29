@@ -18,57 +18,15 @@ class TenderCtrl {
     constructor(){
     }
 
-    cancel(req, res, next) {
-        // On recherche l'utilisateur authentifié
-        return User
-        .findById(req.payload.id)
-        .then(function(user) {            
-            // Si aucun utilisateur trouvé, on renvoie un statut 401
-            if (!user) { return res.sendStatus(401); }
-            // On récupére l'item préchargé
-            var tender = req.tender;
-            // On contrôle que l'utilisateur soit bien l'auteur
-            if(tender.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
-            // On met à jour l'item            
-            return Tender
-            .findOneAndUpdate({_id: tender._id }, { $set: { canceledAt: Date.now() }})
-            .then(function() {
-                // On crée un evenement
-                return Event
-                .newEvent('tender_canceled', user, { kind: this.ModelName, item: tender }, {})
-                .then(function() {
-                    return res.status(200).json({ tender: tender });
-                 });
-            });
-        }).catch(next);
+    preload(req, res, next) {
+        return PublicationCtrl.preload(req, res, next,'tender');
     }
 
-    close(req, res, next) {
-        // On recherche l'utilisateur authentifié
-        return User
-        .findById(req.payload.id)
-        .then(function(user) {            
-            // Si aucun utilisateur trouvé, on renvoie un statut 401
-            if (!user) { return res.sendStatus(401); }
-            // On récupére l'item préchargé
-            var tender = req.tender;
-            // On contrôle que l'utilisateur soit bien l'auteur
-            if(tender.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
-            // On met à jour l'item            
-            return Tender
-            .findOneAndUpdate({_id: tender._id }, { $set: { closedAt: Date.now() }})
-            .then(function() {
-                // On crée un evenement
-                return Event
-                .newEvent('tender_closed', user, { kind: this.ModelName, item: tender }, {})
-                .then(function() {
-                    return res.status(200).json({ tender: tender });
-                 });
-            });
-        }).catch(next);
+    findOne(req, res, next) {
+        return PublicationCtrl.findOne(req, res, next,'tender');
     }
 
-    getQueryFromRequest(req) {
+    findAll(req, res, next) {
         var query = PublicationCtrl.getQueryFromRequest(req);        
         if(typeof req.query.startWorkDate !== 'undefined' && typeof req.query.endWorkDate !== 'undefined') {
             query.workDate = { 
@@ -99,19 +57,7 @@ class TenderCtrl {
                 } 
             }
         }
-        return query;
-    }
-
-    preload(req, res, next) {
-        return PublicationCtrl.preload(req, res, next,'tender');
-    }
-
-    findOne(req, res, next) {
-        return PublicationCtrl.findOne(req, res, next,'tender');
-    }
-
-    findAll(req, res, next) {
-        return PublicationCtrl.findAll(req, res, next,'tender');
+        return PublicationCtrl.findAll(req, res, next,'tender', query);
     }
 
     count(req, res, next) {
@@ -160,6 +106,56 @@ class TenderCtrl {
 
     delete(req, res, next) {
         return PublicationCtrl.delete(req, res, next,'tender');
+    }
+
+    cancel(req, res, next) {
+        // On recherche l'utilisateur authentifié
+        return User
+        .findById(req.payload.id)
+        .then(function(user) {            
+            // Si aucun utilisateur trouvé, on renvoie un statut 401
+            if (!user) { return res.sendStatus(401); }
+            // On récupére l'item préchargé
+            var tender = req.tender;
+            // On contrôle que l'utilisateur soit bien l'auteur
+            if(tender.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
+            // On met à jour l'item            
+            return Tender
+            .findOneAndUpdate({_id: tender._id }, { $set: { canceledAt: Date.now() }})
+            .then(function() {
+                // On crée un evenement
+                return Event
+                .newEvent('tender_canceled', user, { kind: this.ModelName, item: tender }, {})
+                .then(function() {
+                    return res.status(200).json({ tender: tender });
+                 });
+            });
+        }).catch(next);
+    }
+
+    close(req, res, next) {
+        // On recherche l'utilisateur authentifié
+        return User
+        .findById(req.payload.id)
+        .then(function(user) {            
+            // Si aucun utilisateur trouvé, on renvoie un statut 401
+            if (!user) { return res.sendStatus(401); }
+            // On récupére l'item préchargé
+            var tender = req.tender;
+            // On contrôle que l'utilisateur soit bien l'auteur
+            if(tender.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
+            // On met à jour l'item            
+            return Tender
+            .findOneAndUpdate({_id: tender._id }, { $set: { closedAt: Date.now() }})
+            .then(function() {
+                // On crée un evenement
+                return Event
+                .newEvent('tender_closed', user, { kind: this.ModelName, item: tender }, {})
+                .then(function() {
+                    return res.status(200).json({ tender: tender });
+                 });
+            });
+        }).catch(next);
     }
 
     getRoutes() {

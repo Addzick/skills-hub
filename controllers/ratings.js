@@ -10,11 +10,20 @@ const PublicationCtrl = require('./publications');
 
 // Définition du controleur
 class RatingCtrl {
+
     constructor(){
     }
 
-    getQueryFromRequest(req) {
-        const query = PublicationCtrl.getQueryFromRequest(req);
+    preload(req, res, next) {
+        return PublicationCtrl.preload(req, res, next,'rating');
+    }
+
+    findOne(req, res, next) {
+        return PublicationCtrl.findOne(req, res, next,'rating');
+    }
+
+    findAll(req, res, next) {
+        var query = PublicationCtrl.getQueryFromRequest(req);
         if(typeof req.query.target !== 'undefined' ) {
             query.target = { _id : mongoose.Types.ObjectId(req.query.target) };
         }
@@ -27,19 +36,7 @@ class RatingCtrl {
                 $lt: req.query.endValue
             }
         }
-        return query;
-    }
-
-    preload(req, res, next) {
-        return PublicationCtrl.preload(req, res, next,'rating');
-    }
-
-    findOne(req, res, next) {
-        return PublicationCtrl.findOne(req, res, next,'rating');
-    }
-
-    findAll(req, res, next) {
-        return PublicationCtrl.findAll(req, res, next,'rating');
+        return PublicationCtrl.findAll(req, res, next,'rating', query);
     }
 
     create(req, res, next) {

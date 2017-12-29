@@ -18,27 +18,19 @@ class LikeCtrl {
     constructor() {}
    
     preload(req, res, next) {
-        return Like
-        .findOne({_id: mongoose.Types.ObjectId(req.params.like)})
-        .then(function(like) {
-            if(!like) { return res.sendStatus(404); }
-            req.like = like;
-            return next();
-        })
-        .catch(next);
-    }
-
-    findOne(req, res, next) {
         return Promise.all([
             req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(), 
             Like.findOne({_id: mongoose.Types.ObjectId(req.params.like)}).exec()
         ]).then(function(results) {
-            if (!results || results.length < 2) { return res.sendStatus(404); }
-            return res.status(200).json({ 
-                like: results[1].toJSONFor(results[0])
-            });
+            if (!results) { return res.sendStatus(404); }
+            req.like = results[1].toJSONFor(results[0]);
+            return next();
         }).catch(next);
-    }   
+    }
+
+    findOne(req, res, next) {
+        return res.status(200).json({ like: req.like });
+    }
 
     findAll(req, res, next) {
         var query = {};
@@ -126,11 +118,10 @@ class LikeCtrl {
                     { $pull: { likes: like._id }, $inc: { nbLikes : -1 }},
                     { new: true})
                 .then(function(item) {
-                    console.log(item);
                     return Event
                     .findOneAndRemove({ source: { kind: 'like', item: like._id}})
-                    .then(function() {                        
-                        return res.status(200).json({ source: { kind: like.source.kind, item: item.toJSONFor(user)}});
+                    .then(function() {
+                        return res.sendStatus(202);
                     });
                 });
             });

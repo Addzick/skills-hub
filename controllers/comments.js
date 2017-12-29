@@ -18,29 +18,18 @@ class CommentCtrl {
     constructor() {}
 
     preload(req, res, next) {
-        // On recherche le commentaire correspondant
-        return Comment
-        .findOne({_id: mongoose.Types.ObjectId(req.params.comment)})
-        .then(function(comment){
-            // Si aucun commentaire trouvé, on renvoie une erreur 404
-            if(!comment) { return res.sendStatus(404); }        
-            // On remplit la requête avec le commentaire trouvé
-            req.comment = comment;
-            // On continue l'execution
-            return next();
-          }).catch(next);
-    }
-
-    findOne(req, res, next) {
         return Promise.all([
             req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(), 
             Comment.findOne({_id: mongoose.Types.ObjectId(req.params.comment)}).exec()
         ]).then(function(results) {
-            if (!results || results.length < 2) { return res.sendStatus(404); }
-            return res.status(200).json({ 
-                comment: results[1].toJSONFor(results[0])
-            });
+            if (!results) { return res.sendStatus(404); }
+            req.comment = results[1].toJSONFor(results[0]);
+            return next();
         }).catch(next);
+    }
+
+    findOne(req, res, next) {
+        return res.status(200).json({ comment: req.comment });
     }
 
     findAll(req, res, next) {
@@ -133,7 +122,7 @@ class CommentCtrl {
                     return Event
                     .findOneAndRemove({ source: { kind: 'comment', item: comment._id}})
                     .then(function() {
-                        return res.status(200).json({ source: { kind: comment.source.kind, item: item.toJSONFor(user)}});
+                        return res.sendStatus(202);
                     });
                 });
             });

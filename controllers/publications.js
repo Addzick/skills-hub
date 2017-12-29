@@ -19,108 +19,36 @@ class PublicationCtrl {
 
     constructor() {}
 
-    getQueryFromRequest(req) {
-        
-        // On prépare un objet
-        var query = {};
-
-        // A-t-on un auteur ?
-        if(typeof req.query.author !== 'undefined' ) {
-            query.author = { _id : mongoose.Types.ObjectId(req.query.author) };
-        }
-
-        // A-t-on un titre ?
-        if(typeof req.query.title !== 'undefined' ) {
-            query.title = { $regex : '.*' + req.query.title + '.*' };
-        }
-
-        // A-t-on un categorie ?
-        if(typeof req.query.categories !== 'undefined') {
-            query.category = { $in : req.query.categories };
-        }
-
-        // A-t-on une période ?
-        if(typeof req.query.startDate !== 'undefined' && typeof req.query.endDate !== 'undefined') {
-            query.updatedAt = { 
-                $gte: new ISODate(req.query.startDate),
-                $lte: new ISODate(req.query.endDate)
-            }
-        }
-
-        // On renvoie l'objet
-        return query;
-    }
-
-    getOptionsFromRequest(req) {
-        // On prépare un objet pour les options
-        var opts = { skip: 0, limit: 20, sort: { createdAt: 'desc' } };
-
-        // A-t-on un champ pour le tri ?
-        if(typeof req.query.sortBy !== 'undefined') {
-            opts.sort[req.query.sortBy] = req.query.sortDir || 'asc';
-        }      
-        // A-t-on une limite ?
-        if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
-            opts.limit = Number(req.query.size);
-        }
-
-        // A-t-on une page ?
-        if(typeof req.query.page !== 'undefined' && req.query.page >= 1) {
-            opts.skip = Number((req.query.page - 1) * req.query.size);
-        }
-
-         // On renvoie les options
-         return opts;
-    }
-
     preload(req, res, next, name) {
-        // On recherche l'appel d'offres correspondant
-        return mongoose.model(name)
-        .findOne({ _id: mongoose.Types.ObjectId(req.params[name]) })
-        .then(function(result) {
-            // Si aucun item trouvé, on renvoie une erreur 404
-            if(!result) { console.log(`${ name } not found`); return res.sendStatus(404); }
-            // On remplit la requête avec l'item trouvé
-            req[name] = result;
-            // On continue l'execution
-            return next();
-        }).catch(next);
-    }
-
-    preloadCategory(req, res, next) {
-        // On recherche la categorie correspondante
-        return Category
-        .findOne({_id: mongoose.Types.ObjectId(req.params.category)})
-        .then(function(category){
-            // Si aucune catégorie trouvée, on renvoie une erreur 404
-            if(!category) { return res.sendStatus(404); }        
-            // On remplit la requête avec la catégorie trouvée
-            req.category = category;
-            // On continue l'execution
-            return next();
-          }).catch(next);
-    }
-
-    findOne(req, res, next, name) {
         return Promise.all([
             req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(),
             mongoose.model(name).findOne({_id: mongoose.Types.ObjectId(req.params[name])}).exec()
         ])
         .then(function(results) {
-            if (!results || results.length < 2) { return res.sendStatus(404); }
-            var wrapper = {};
-            wrapper[name] = results[1].toJSONFor(results[0])
-            return res.status(200).json(wrapper);
+            if (!results) { return res.sendStatus(404); }
+            req[name] = results[1].toJSONFor(results[0])
+            return next();
         })
         .catch(next);
+
+        // On recherche l'appel d'offres correspondant
+        return mongoose.model(name)
+        .findOne({ _id: mongoose.Types.ObjectId(req.params[name]) })
+        .then(function(result) {
+            
+        }).catch(next);
     }
 
-    findAll(req, res, next, name) {
-        var query = this.getQueryFromRequest(req);
-        var opts = this.getOptionsFromRequest(req); 
+    findOne(req, res, next, name) {
+        var wrapper = {};
+        wrapper[name] = req[name];
+        return res.status(200).json(wrapper);
+    }
+
+    findAll(req, res, next, name, query) {
         return Promise.all([
             req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(),
-            mongoose.model(name).find(query, {}, opts).exec(),
+            mongoose.model(name).find(query, {}, this.getOptionsFromRequest(req)).exec(),
             mongoose.model(name).count(query).exec()
         ]).then(function(results) { 
             var user = results[0];
@@ -205,15 +133,76 @@ class PublicationCtrl {
         .then(function(user) {            
             // Si aucun utilisateur trouvé, on renvoie un statut 401
             if (!user) { return res.sendStatus(401); }
+            // On recupre l'item
+            var item = req[name];
             // On contrôle que l'utilisateur soit bien l'auteur
-            if(req[name].author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
+            if(item.author._id.toString() !== user._id.toString()) { return res.sendStatus(403); }
             // On supprime l'item
             return mongoose.model(name)
-            .findByIdAndRemove(article._id)
+            .findByIdAndRemove(item._id)
             .then(function() {
-                return res.sendStatus(202);
+                return Event
+                .remove({ source: { kind: name, item: item._id}})
+                .then(function() {
+                    return res.sendStatus(202);
+                });
+                
             });
         }).catch(next);
+    }
+    
+    getQueryFromRequest(req) {
+        
+        // On prépare un objet
+        var query = {};
+
+        // A-t-on un auteur ?
+        if(typeof req.query.author !== 'undefined' ) {
+            query.author = { _id : mongoose.Types.ObjectId(req.query.author) };
+        }
+
+        // A-t-on un titre ?
+        if(typeof req.query.title !== 'undefined' ) {
+            query.title = { $regex : '.*' + req.query.title + '.*' };
+        }
+
+        // A-t-on un categorie ?
+        if(typeof req.query.categories !== 'undefined') {
+            query.category = { $in : req.query.categories };
+        }
+
+        // A-t-on une période ?
+        if(typeof req.query.startDate !== 'undefined' && typeof req.query.endDate !== 'undefined') {
+            query.updatedAt = { 
+                $gte: new ISODate(req.query.startDate),
+                $lte: new ISODate(req.query.endDate)
+            }
+        }
+
+        // On renvoie l'objet
+        return query;
+    }
+
+    getOptionsFromRequest(req) {
+        // On prépare un objet pour les options
+        var opts = { skip: 0, limit: 20, sort: { createdAt: 'desc' } };
+
+        // A-t-on un champ pour le tri ?
+        if(typeof req.query.sortBy !== 'undefined') {
+            opts.sort[req.query.sortBy] = req.query.sortDir || 'asc';
+        }      
+        // A-t-on une limite ?
+        if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
+            opts.limit = Number(req.query.size);
+        }
+
+        // A-t-on une page ?
+        if(typeof req.query.page !== 'undefined' && req.query.page >= 1) {
+            opts.skip = Number((req.query.page - 1) * req.query.size);
+        }
+
+         // On renvoie les options
+         return opts;
     }
 }
 

@@ -18,6 +18,21 @@ class CategoryCtrl {
     constructor() {
     }
 
+    preload(req, res, next) {
+        return Promise.all([
+            req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(), 
+            Category.findOne({ _id: mongoose.Types.ObjectId(req.params.category)}).exec()
+        ]).then(function(results) {
+            if(!results) return res.sendStatus(404);
+            req.category = results[1].toJSONFor(results[0]);
+            return next();
+        }).catch(next);
+    }
+
+    findOne(req, res, next) {
+        return res.status(200).json({ category: req.category });
+    }
+
     findAll(req, res, next) {
         var opts = { skip: 0, limit: 20, sort: { createdAt: 'desc' } };
         if(typeof req.query.sortBy !== 'undefined') { 
@@ -30,8 +45,6 @@ class CategoryCtrl {
             opts.skip = Number((req.query.page - 1) * req.query.size);
         }
         
-        ;
-
         return Promise.all([
             req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(),
             Category.find({}, {}, opts).exec(),
@@ -58,20 +71,9 @@ class CategoryCtrl {
         }).catch(next);
     }
 
-    findOne(req, res, next) {
-        return Promise.all([
-            req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(), 
-            Category.findOne({ _id: mongoose.Types.ObjectId(req.params.category)}).exec()
-        ]).then(function(results) {
-            if(!categories) return res.sendStatus(404);
-            return res.status(200).json({ 
-                category: results[1].toJSONFor(results[0]) 
-            });
-        }).catch(next);
-    }
-
     getRoutes() {
         var router = require('express').Router();
+        router.param('category', this.preload);
         router.get('/', auth.optional, this.findAll);
         router.get('/:category', auth.optional, this.findOne);
         return router;

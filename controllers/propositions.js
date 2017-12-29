@@ -16,6 +16,44 @@ class PropositionCtrl {
     constructor(){
     }
 
+    preload(req, res, next) {
+        return PublicationCtrl.preload(req, res, next,'proposition');
+    }
+
+    findOne(req, res, next) {
+        return PublicationCtrl.findOne(req, res, next,'proposition');
+    }
+
+    findAll(req, res, next) {
+        var query = PublicationCtrl.getQueryFromRequest(req);        
+        if(typeof req.query.startAmount !== 'undefined' && typeof req.query.endAmount !== 'undefined') {
+            query.amount = { 
+                $gte: new Number(req.query.startAmount),
+                $lte: new Number(req.query.endAmount)
+            };
+        }
+        if(typeof req.query.validOnly !== 'undefined' ) {
+            query.validityStart = { $lte: Date.now() };
+            query.validityEnd = { $gte: Date.now() };
+        }     
+        if(typeof req.query.source !== 'undefined' ) {
+            query.source = { _id : mongoose.Types.ObjectId(req.query.source) };
+        }
+        return PublicationCtrl.findAll(req, res, next,'proposition', query);
+    }
+
+    create(req, res, next) {
+        return PublicationCtrl.create(req, res, next,'proposition');
+    }
+
+    edit(req, res, next) {
+        return PublicationCtrl.edit(req, res, next,'proposition');
+    }
+
+    delete(req, res, next) {
+        return PublicationCtrl.delete(req, res, next,'proposition');
+    }
+
     accept(req, res, next) {
         // On recherche l'utilisateur authentifié
         return User
@@ -89,48 +127,6 @@ class PropositionCtrl {
                  });
             });
         }).catch(next);
-    }
-
-    getQueryFromRequest(req) {
-        var query = PublicationCtrl.getQueryFromRequest(req);        
-        if(typeof req.query.startAmount !== 'undefined' && typeof req.query.endAmount !== 'undefined') {
-            query.amount = { 
-                $gte: new Number(req.query.startAmount),
-                $lte: new Number(req.query.endAmount)
-            };
-        }
-        if(typeof req.query.validOnly !== 'undefined' ) {
-            query.validityStart = { $lte: Date.now() };
-            query.validityEnd = { $gte: Date.now() };
-        }     
-        if(typeof req.query.source !== 'undefined' ) {
-            query.source = { _id : mongoose.Types.ObjectId(req.query.source) };
-        }
-        return query;
-    }
-
-    preload(req, res, next) {
-        return PublicationCtrl.preload(req, res, next,'proposition');
-    }
-
-    findOne(req, res, next) {
-        return PublicationCtrl.findOne(req, res, next,'proposition');
-    }
-
-    findAll(req, res, next) {
-        return PublicationCtrl.findAll(req, res, next,'proposition');
-    }
-
-    create(req, res, next) {
-        return PublicationCtrl.create(req, res, next,'proposition');
-    }
-
-    edit(req, res, next) {
-        return PublicationCtrl.edit(req, res, next,'proposition');
-    }
-
-    delete(req, res, next) {
-        return PublicationCtrl.delete(req, res, next,'proposition');
     }
 
     getRoutes() {

@@ -17,6 +17,52 @@ class TaskCtrl {
     constructor(){
     }
 
+    preload(req, res, next) {
+        return PublicationCtrl.preload(req, res, next,'task');
+    }
+
+    findOne(req, res, next) {
+        return PublicationCtrl.findOne(req, res, next,'task');
+    }
+
+    findAll(req, res, next) {
+        var query = PublicationCtrl.getQueryFromRequest(req);        
+        if(typeof req.query.startAmount !== 'undefined' && typeof req.query.endAmount !== 'undefined') {
+            query.amount = { 
+                $gte: new Number(req.query.startAmount),
+                $lte: new Number(req.query.endAmount)
+            }
+        }
+        if(typeof req.query.startCompletionDate !== 'undefined' && typeof req.query.endCompletionDate !== 'undefined') {
+            query.completionDate = { 
+                $gte: new ISODate(req.query.startCompletionDate),
+                $lte: new ISODate(req.query.endCompletionDate)
+            }
+        }
+        if(typeof req.query.onSite !== 'undefined' ) {
+            query.onSite = req.query.onSite
+        }
+        if(typeof req.query.materialIsSupplied !== 'undefined' ) {
+            query.materialIsSupplied = req.query.materialIsSupplied
+        }        
+        if(typeof req.query.concern !== 'undefined' ) {
+            query.concern = { _id : mongoose.Types.ObjectId(req.query.concern) };
+        }
+        return PublicationCtrl.findAll(req, res, next,'task', query);
+    }
+
+    create(req, res, next) {
+        return PublicationCtrl.create(req, res, next,'task');
+    }
+
+    edit(req, res, next) {
+        return PublicationCtrl.edit(req, res, next,'task');
+    }
+
+    delete(req, res, next) {
+        return PublicationCtrl.delete(req, res, next,'task');
+    }
+
     confirm(req, res, next) {
         // On recherche l'utilisateur authentifié
         return User
@@ -90,56 +136,6 @@ class TaskCtrl {
                  });
             });
         }).catch(next);
-    }
-
-    getQueryFromRequest(req) {
-        var query = PublicationCtrl.getQueryFromRequest(req);        
-        if(typeof req.query.startAmount !== 'undefined' && typeof req.query.endAmount !== 'undefined') {
-            query.amount = { 
-                $gte: new Number(req.query.startAmount),
-                $lte: new Number(req.query.endAmount)
-            }
-        }
-        if(typeof req.query.startCompletionDate !== 'undefined' && typeof req.query.endCompletionDate !== 'undefined') {
-            query.completionDate = { 
-                $gte: new ISODate(req.query.startCompletionDate),
-                $lte: new ISODate(req.query.endCompletionDate)
-            }
-        }
-        if(typeof req.query.onSite !== 'undefined' ) {
-            query.onSite = req.query.onSite
-        }
-        if(typeof req.query.materialIsSupplied !== 'undefined' ) {
-            query.materialIsSupplied = req.query.materialIsSupplied
-        }        
-        if(typeof req.query.concern !== 'undefined' ) {
-            query.concern = { _id : mongoose.Types.ObjectId(req.query.concern) };
-        }
-        return query;
-    }
-
-    preload(req, res, next) {
-        return PublicationCtrl.preload(req, res, next,'task');
-    }
-
-    findOne(req, res, next) {
-        return PublicationCtrl.findOne(req, res, next,'task');
-    }
-
-    findAll(req, res, next) {
-        return PublicationCtrl.findAll(req, res, next,'task');
-    }
-
-    create(req, res, next) {
-        return PublicationCtrl.create(req, res, next,'task');
-    }
-
-    edit(req, res, next) {
-        return PublicationCtrl.edit(req, res, next,'task');
-    }
-
-    delete(req, res, next) {
-        return PublicationCtrl.delete(req, res, next,'task');
     }
 
     getRoutes() {

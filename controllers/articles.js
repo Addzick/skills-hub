@@ -14,15 +14,6 @@ class ArticleCtrl {
     constructor(){
     }
 
-    getQueryFromRequest(req){
-        var query = PublicationCtrl.getQueryFromRequest(req);
-        // A-t-on des tags ?  
-        if(typeof req.query.tags !== 'undefined' ) {
-            query.tags = { $in : req.query.tags };
-        }
-        return query;
-    }
-    
     preload(req, res, next) {
         return PublicationCtrl.preload(req, res, next,'article');
     }
@@ -32,7 +23,11 @@ class ArticleCtrl {
     }
 
     findAll(req, res, next) {
-        return PublicationCtrl.findAll(req, res, next,'article');
+        var query = PublicationCtrl.getQueryFromRequest(req);
+        if(typeof req.query.tags !== 'undefined' ) {
+            query.tags = { $in : req.query.tags };
+        }
+        return PublicationCtrl.findAll(req, res, next,'article', query);
     }
 
     create(req, res, next) {
