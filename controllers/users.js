@@ -13,6 +13,167 @@ const User     = mongoose.model('user');
 const Event    = mongoose.model('event');
 const Address  = mongoose.model('address');
 
+function getAggregationJoin(){
+    return [
+        {   
+            $lookup:      
+            {        
+                from: "categories",
+                localField: "favorites",
+                foreignField : "_id",
+                as: "favorites"
+            }
+        },
+        {   
+            $lookup:      
+            {        
+                from: "articles",
+                localField: "_id",
+                foreignField : "author",
+                as: "articles"
+            }
+        },
+        {   
+            $lookup:      
+            {        
+                from: "comments",
+                localField: "_id",
+                foreignField : "author",
+                as: "comments"
+            }
+        },
+        {   
+            $lookup:      
+            {        
+                from: "likes",
+                localField: "_id",
+                foreignField : "author",
+                as: "likes"
+            }
+        },
+        {   
+            $lookup:      
+            {        
+                from: "propositions",
+                localField: "_id",
+                foreignField : "author",
+                as: "propositions"
+            }
+        },
+        {   
+            $lookup:      
+            {        
+                from: "ratings",
+                localField: "_id",
+                foreignField : "author",
+                as: "ratings"
+            }
+        },
+        {   
+            $lookup:      
+            {        
+                from: "ratings",
+                localField: "_id",
+                foreignField : "target",
+                as: "notes"
+            }
+        },
+        {   
+            $lookup:      
+            {        
+                from: "tasks",
+                localField: "_id",
+                foreignField : "author",
+                as: "tasks"
+            }
+        },
+        {   
+            $lookup:      
+            {        
+                from: "tenders",
+                localField: "_id",
+                foreignField : "author",
+                as: "tenders"
+            }
+        },
+        { 
+            $addFields: { 
+                displayName: { $concat: ["$lastname", " ", "$firstname" ]},
+                nbArticles: { $size: "$articles" }, 
+                nbComments: { $size: "$comments" }, 
+                nbLikes: { $size: "$likes" },
+                nbRatings: { $size: "$ratings" },		
+                nbTenders: { $size: "$tenders" }, 
+                totalTenderAmount: { $sum: "$tenders.amount"},
+                avgTenderAmount: { $avg: "$tenders.amount"},
+                maxTenderAmount: { $max: "$tenders.amount"},		
+                nbTasks: { $size: "$tasks" },
+                totalTaskAmount: { $sum: "$tasks.amount"},
+                avgTaskAmount: { $avg: "$tasks.amount"},
+                maxTaskAmount: { $max: "$tasks.amount"},
+                nbStars: { $avg: "$ratings.value" }
+            }
+        },
+    ];
+}
+
+function getAggregationProject(){
+    return { $project: { articles:0, comments:0, likes:0, propositions:0, ratings:0, tasks:0, tenders:0 }};
+}
+
+function getAggregationQuery(req){
+    var query = [];
+    
+    if(typeof req.query.name !== 'undefined' ) {
+        query.push({ $or: [ 
+            { lastname : { $regex : '.*' + req.query.name + '.*' }}, 
+            { firstname : { $regex : '.*' + req.query.name + '.*' }}
+        ]});
+    }
+    if(typeof req.query.abos !== 'undefined') {
+        query.push({ abo: { $in : req.query.abos }});
+    }
+    if(typeof req.query.categories !== 'undefined') {
+        query.push({ favorites: { $in : req.query.categories }});
+    }
+    if(typeof req.query.startStars !== 'undefined' && typeof req.query.endStars !== 'undefined') {
+        query.push({ nbStars: { $gte: Number(req.query.startStars), $lte: Number(req.query.endStars)}});
+    }
+    if(typeof req.query.localisation !== 'undefined') {
+        query.push({ "address.loc" : { 
+            $near : { 
+                $geometry : { 
+                    type : "Point" ,
+                    coordinates : [ Number(req.query.localisation.longitude) , Number(req.localisation.latitude) ] 
+                } ,
+                $maxDistance : Number(req.query.localisation.distance) || 50
+            }
+        }});
+    }
+    return query;
+}
+
+function getAggregationOptions(req) {
+    var opts = [];   
+
+    var sort = { $sort: { createdAt: 1 } };
+    if(typeof req.query.sortBy !== 'undefined') { 
+        sort.$sort[req.query.sortBy] = req.query.sortDir ==='desc' ? 1 : -1; 
+    }
+    opts.push(sort);
+
+    if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
+        opts.push({ $limit: Number(req.query.size) });
+    }
+
+    if(typeof req.query.page !== 'undefined' && req.query.page >= 1) {
+        opts.push({ $skip: Number((req.query.page - 1) * req.query.size) });
+    }
+
+    return opts;
+}
+
+
 // Définition du controleur
 class UserCtrl {
     constructor() {
@@ -98,121 +259,62 @@ class UserCtrl {
         }).catch(next);
     }
 
-    editAddress(req, res, next) {
-        // On recherche l'utilisateur authentifié
-        return User
-        .findById(req.payload.id)
-        .then(function(user) {
-            // Si aucun utilisateur trouvé, on renvoie un statut 401
-            if (!user) { return res.sendStatus(401); }            
-            // On sauve la nouvelle addresse
-            var address = req.body.address;
-            return Address
-            .findOneAndUpdate({ 
-                'loc.coordinates': address.loc.coordinates
-            }, address, { new: true, upsert:true })
-            .then(function(addr){
-                // On contrôle l'adresse
-                if(!addr) { return res.sendStatus(422); }
-                // On ajoute l'adresse à l'utilisateur
-                user.address = addr;
-                return user.save().then(function(newUser) {
-                    // On crée un evenement
-                    return Event
-                    .newEvent('user_updated', user, { kind: 'user', item: newUser })
-                    .then(function() {
-                        // On renvoie un statut OK avec l'utilisateur et le token
-                        return res.status(200).json({ 
-                            address: addr
-                        });
-                    });
-                });                
-            });
-            
-        }).catch(next);
-    }
-    
     get(req, res, next) {
-        // On recherche l'utilisateur authentifié
-        return User
-        .findById(req.payload.id)
-        .then(function(user) {
-            // Aucun utilisateur, on renvoie un statut 401
-            if(!user){ return res.sendStatus(401); }
-            // On renvoie un statut OK et l'utilisateur correctement rempli
-            return res.status(200).json({ user: user.toJSONFor(user) });
+        var aggregation = [];
+        
+        getAggregationJoin().forEach(join => aggregation.push(join));
+        aggregation.push({ $addFields: { canEdit: true }});
+        aggregation.push({ $match: { _id: mongoose.Types.ObjectId(req.payload.id) }});
+        aggregation.push(getAggregationProject());
+
+        return User.aggregate(aggregation).then(users => {
+            if(!users) return res.sendStatus(401);
+            return res.status(200).json({ user: users[0] });
         }).catch(next);
     }
 
     findOne(req, res, next) {
-        return Promise.all([
-            req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(), 
-            User.findOne({ _id: mongoose.Types.ObjectId(req.params.user) }).exec()
-        ]).then(function(results) {
-            if (!results || results.length < 2) { return res.sendStatus(404); }
-            return res.status(200).json({ 
-                user: results[1].toJSONFor(results[0])
+        const query = req.payload ? { _id: mongoose.Types.ObjectId(req.payload.id) }: {};
+        return User.findOne(query).then(user => {
+
+            var aggregation = [];
+            getAggregationJoin().forEach(join => aggregation.push(join));
+            aggregation.push({ $match: { _id: mongoose.Types.ObjectId(req.params.user)}});
+            if(user) { aggregation.push({ $addFields: { canEdit: { $eq: [ "$_id", user._id ] }}}); }
+            aggregation.push(getAggregationProject());
+
+            return User.aggregate(aggregation).then(users => {
+                if(!users) return res.sendStatus(404);
+                return res.status(200).json({ user: users[0] });
             });
         }).catch(next);
     }
 
     findAll(req, res, next) {
-        var query = {};
-        var opts = { skip: 0, limit: 20, sort: { updatedAt: 'desc' } };
-        if(typeof req.query.lastname !== 'undefined' ) {
-            query.lastname = { $regex : '.*' + req.query.lastname + '.*' };
-        }
-        if(typeof req.query.firstname !== 'undefined' ) {
-            query.firstname = { $regex : '.*' + req.query.firstname + '.*' };
-        }
-        if(typeof req.query.abos !== 'undefined') {
-            query.abo = { $in : req.query.abos };
-        }
-        if(typeof req.query.categories !== 'undefined') {
-            query.favorites = { $in : req.query.categories };
-        }
-        if(typeof req.query.startStars !== 'undefined' && typeof req.query.endStars !== 'undefined') {
-            query.nbStars = { 
-                $gte: new Number(req.query.startStars),
-                $lte: new Number(req.query.endStars)
-            };
-        }
-        if(typeof req.query.localisation !== 'undefined') {
-            query.address.loc = { 
-                loc: { 
-                    $near : { 
-                        $geometry : { 
-                            type : "Point" ,
-                            coordinates : [ new Number(req.query.localisation.longitude) , new Number(req.localisation.latitude) ] 
-                        } ,
-                        $maxDistance : new Number(req.query.localisation.distance) || 50
-                    } 
-                } 
-            }
-        }        
-        if(typeof req.query.sortBy !== 'undefined') {
-            opts.sort[req.query.sortBy] = req.query.sortDir || 'asc';
-        }      
-        if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
-            opts.limit = Number(req.query.size);
-        }
-        if(typeof req.query.page !== 'undefined' && req.query.page >= 1) {
-            opts.skip = Number((req.query.page - 1) * req.query.size);
-        }
+        const query = req.payload ? { _id: mongoose.Types.ObjectId(req.payload.id) }: {};
+        return User.findOne(query).then(user => {
 
-        return Promise.all([
-            req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(),
-            User.find(query, {}, opts).exec(),
-            User.count(query).exec()
-        ]).then(function(results){ 
-            var user = results[0];
-            var users = results[1];
-            var nb = results[2];
-            return res.status(200).json({ 
-                users: users.map(function(u) {
-                    return u.toJSONFor(user);
-                }),
-                count: nb
+            var aggregation = [];        
+            getAggregationJoin().forEach(join => aggregation.push(join));
+            if(user) { aggregation.push({ $addFields: { canEdit: { $eq: [ "$_id", user._id ] }}}); }
+            aggregation.push(getAggregationProject());
+
+            var query = getAggregationQuery(req);
+            if(query && query.length > 0) { 
+                var $match = { $and: [] };
+                query.forEach(q => $match.$and.push(q));
+                aggregation.push($match); 
+            }
+
+            getAggregationOptions(req).forEach(o => aggregation.push(o));
+
+            return Promise.all([
+                User.aggregate(aggregation).exec(),
+                User.count(query && query.length > 0 ? { $and: query } : {}).exec()
+            ]).then(function(results){ 
+                var users = results[0];
+                var nb = results[1];
+                return res.status(200).json({ users: results[0], count: results[1] });
             });
         }).catch(next);
     }
@@ -242,11 +344,10 @@ class UserCtrl {
         var router = require('express').Router();
         router.post('/register', this.register);
         router.post('/login', this.login);
-        router.get('/account', auth.required, this.get);
-        router.post('/account', auth.required, this.edit);
-        router.put('/account', auth.required, this.editAddress);
         router.get('/users', auth.optional,this.findAll);
         router.get('/users/:user', auth.optional,this.findOne);
+        router.get('/account', auth.required, this.get);
+        router.post('/account', auth.required, this.edit);
         return router;
     }
 }

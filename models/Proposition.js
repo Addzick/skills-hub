@@ -28,7 +28,19 @@ var PropositionSchema =  new mongoose.Schema({
     acceptedAt: Date,
     rejectedAt: Date,
     canceledAt: Date,
-}, { timestamps: true });
+}, {
+  timestamps: true,
+  toObject: {
+    transform: function(doc, ret){
+      delete ret.__v;
+    }
+  },
+  toJSON: {
+    transform: function(doc, ret){
+      delete ret.__v;
+    }
+  }
+});
 
 // Définition du traitement pour le retour d'un objet JSON pour un utilisateur spécifié
 PropositionSchema.methods.toJSONFor = function(user) {

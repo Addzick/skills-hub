@@ -37,7 +37,10 @@ var UserSchema = new mongoose.Schema({
     transform: function(doc, ret){
       delete ret.hash;
       delete ret.salt;
-      delete ret.__v;  
+      delete ret.__v;
+      ret.displayName = (doc.firstname !== undefined ||  doc.lastname !== undefined) 
+      ? (doc.firstname !== undefined ? doc.firstname : '') + (doc.lastname !== undefined ? ' ' + doc.lastname : '') 
+      : 'Utilisateur anonyme';
     }
   },
   toJSON: {
@@ -45,6 +48,9 @@ var UserSchema = new mongoose.Schema({
       delete ret.hash;
       delete ret.salt;
       delete ret.__v; 
+      ret.displayName = (doc.firstname !== undefined ||  doc.lastname !== undefined) 
+      ? (doc.firstname !== undefined ? doc.firstname : '') + (doc.lastname !== undefined ? ' ' + doc.lastname : '') 
+      : 'Utilisateur anonyme';
     }
   }
 });
@@ -67,7 +73,7 @@ UserSchema.methods.toJSONFor = function(user) {
     displayName: displayName,
     bio: this.bio,
     image: this.image,
-    address: this.address ? this.address.toJSONFor() : this.address,
+    address: this.address,
     favorites: this.favorites && user ? this.favorites.map((fav) => fav.toJSONFor(user)) : this.favorites,
     nbStars: this.nbStars,
     createdAt: this.createdAt,

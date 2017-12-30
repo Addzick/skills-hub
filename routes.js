@@ -15,6 +15,7 @@ module.exports.initialization = function(app) {
 
   // Définition de l'URL pour l'api
   router.use('/api',              require('./controllers/users').getRoutes());
+  router.use('/api/addresses',    require('./controllers/addresses').getRoutes());
   router.use('/api/articles',     require('./controllers/articles').getRoutes());
   router.use('/api/tags',         require('./controllers/tags').getRoutes());
   router.use('/api/categories',   require('./controllers/categories').getRoutes());

@@ -26,7 +26,19 @@ var TaskSchema =  new mongoose.Schema({
     confirmedAt: Date,
     paidAt: Date,
     canceledAt: Date,
-}, { timestamps: true });
+}, {
+  timestamps: true,
+  toObject: {
+    transform: function(doc, ret){
+      delete ret.__v;
+    }
+  },
+  toJSON: {
+    transform: function(doc, ret){
+      delete ret.__v;
+    }
+  }
+});
 
 // Définition du traitement pour le retour d'un objet JSON pour un utilisateur spécifié
 TaskSchema.methods.toJSONFor = function(user) {

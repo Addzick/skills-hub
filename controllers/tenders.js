@@ -72,38 +72,6 @@ class TenderCtrl {
         return PublicationCtrl.edit(req, res, next,'tender');
     }
 
-    editAddress(req, res, next) {
-        // On recherche l'utilisateur authentifié
-        return User
-        .findById(req.payload.id)
-        .then(function(user) {
-            // Si aucun utilisateur trouvé, on renvoie un statut 401
-            if (!user) { return res.sendStatus(401); }            
-            // On sauve la nouvelle addresse
-            var address = req.body.address;
-            return Address
-            .findOneAndUpdate({ 
-                'loc.coordinates': address.loc.coordinates
-            }, address, { new: true, upsert:true })
-            .then(function(addr){
-                // On contrôle l'adresse
-                if(!addr) { return res.sendStatus(422); }
-                // On ajoute l'adresse à l'appel d'offres
-                return mongoose.model(name)
-                .findOneAndUpdate({_id: req.tender._id }, { $set: { address:addr }}, { new: true })
-                then(function(newTender) {
-                    // On crée un evenement
-                    return Event
-                    .newEvent('tender_updated', user, { kind: 'tender', item: newTender })
-                    .then(function() {
-                        // On renvoie un statut OK avec l'utilisateur et le token
-                        return res.sendStatus(202);
-                    });
-                });
-            });
-        }).catch(next);
-    }
-
     delete(req, res, next) {
         return PublicationCtrl.delete(req, res, next,'tender');
     }

@@ -31,7 +31,19 @@ var TenderSchema = new mongoose.Schema({
     tasks:[{ type: mongoose.SchemaTypes.ObjectId, ref: "task" }],
     closedAt: Date,
     canceledAt: Date, 
-}, { timestamps: true });
+}, {
+  timestamps: true,
+  toObject: {
+    transform: function(doc, ret){
+      delete ret.__v;
+    }
+  },
+  toJSON: {
+    transform: function(doc, ret){
+      delete ret.__v;
+    }
+  }
+});
 
 // Définition du traitement pour le retour d'un objet JSON pour un utilisateur spécifié
 TenderSchema.methods.toJSONFor = function(user) {
@@ -54,13 +66,13 @@ TenderSchema.methods.toJSONFor = function(user) {
     workDate: this.workDate,
     validityStart: this.validityStart,
     validityEnd: this.validityEnd,
+    address: this.address,
     nbComments: this.nbComments,
     nbLikes: this.nbLikes,
     nbPropositions: this.nbPropositions,
     nbTasks: this.nbTasks,
     author: this.author && user ? this.author.toJSONFor(user) : this.author,
     category: this.category && user ? this.category.toJSONFor(user) : this.category,    
-    address: this.address && user ? this.address.toJSONFor(user) : this.address,
     target: this.target && user ? this.target.toJSONFor(user) : this.target,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,

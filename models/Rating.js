@@ -20,7 +20,19 @@ var RatingSchema = new mongoose.Schema({
     concern: { type: mongoose.SchemaTypes.ObjectId, ref: "task" },
     comments:[{ type: mongoose.SchemaTypes.ObjectId, ref: "comment" }],
     likes:[{ type: mongoose.SchemaTypes.ObjectId, ref: "like" }],
-}, { timestamps: true });
+}, {
+  timestamps: true,
+  toObject: {
+    transform: function(doc, ret){
+      delete ret.__v;
+    }
+  },
+  toJSON: {
+    transform: function(doc, ret){
+      delete ret.__v;
+    }
+  }
+});
 
 // Définition du traitement pour le retour d'un objet JSON pour un utilisateur spécifié
 RatingSchema.methods.toJSONFor = function(user) {

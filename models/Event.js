@@ -13,7 +13,19 @@ var EventSchema =  new mongoose.Schema({
     type: { type: String, required: true, lowercase:true },
     author: { type: mongoose.SchemaTypes.ObjectId, ref: 'user' },
     source: { kind : String, item: {type: mongoose.SchemaTypes.ObjectId, refPath: 'source.kind' } },    
-}, { timestamps: true });
+}, {
+  timestamps: true,
+  toObject: {
+    transform: function(doc, ret){
+      delete ret.__v;
+    }
+  },
+  toJSON: {
+    transform: function(doc, ret){
+      delete ret.__v;
+    }
+  }
+});
 
 // Définition du traitement pour le retour d'un objet JSON pour un utilisateur spécifié
 EventSchema.methods.toJSONFor = function(user) {

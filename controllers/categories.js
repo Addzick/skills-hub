@@ -10,7 +10,6 @@ const mongoose = require('mongoose');
 const auth = require('../config/auth');
 const Category = mongoose.model('category');
 const User = mongoose.model('user');
-const Tender = mongoose.model('tender');
 
 // Définition du controleur
 class CategoryCtrl {
@@ -19,13 +18,42 @@ class CategoryCtrl {
     }
 
     preload(req, res, next) {
-        return Promise.all([
-            req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(), 
-            Category.findOne({ _id: mongoose.Types.ObjectId(req.params.category)}).exec()
-        ]).then(function(results) {
-            if(!results) return res.sendStatus(404);
-            req.category = results[1].toJSONFor(results[0]);
-            return next();
+        const query = req.payload ? { _id: mongoose.Types.ObjectId(req.payload.id) }: {};
+        
+        return User.findOne(query).then(user => {
+            var aggregations = [
+                {   
+                    $lookup:      
+                    {        
+                        from: "articles",
+                        localField: "_id",
+                        foreignField : "category",
+                        as: "articles"
+                    }
+                },
+                {   
+                    $lookup:      
+                    {        
+                        from: "tenders",
+                        localField: "_id",
+                        foreignField : "category",
+                        as: "tenders"
+                    }
+                },
+                { $match: { _id: mongoose.Types.ObjectId(req.params.category) }},
+                { $addFields: { nbArticles: { $size: "$articles" }, nbTenders: { $size: "$tenders" }}}
+            ];
+
+            if(user){
+                aggregations.push({ $addFields: { isFavorite: { $in: [ "$_id", user.favorites ]}}});
+            }
+            aggregations.push({ $project: { articles:0, tenders:0 }});
+
+            return Category.aggregate(aggregations).then(categories => {
+                if(!categories) return res.sendStatus(404);
+                req.category = categories[0];
+                return next();
+            });
         }).catch(next);
     }
 
@@ -34,39 +62,51 @@ class CategoryCtrl {
     }
 
     findAll(req, res, next) {
-        var opts = { skip: 0, limit: 20, sort: { createdAt: 'desc' } };
-        if(typeof req.query.sortBy !== 'undefined') { 
-            opts.sort[req.query.sortBy] = req.query.sortDir || 'asc'; 
-        }
-        if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
-            opts.limit = Number(req.query.size);
-        }
-        if(typeof req.query.page !== 'undefined' && req.query.page >= 1) {
-            opts.skip = Number((req.query.page - 1) * req.query.size);
-        }
+        const query = req.payload ? { _id: mongoose.Types.ObjectId(req.payload.id) }: {};
         
-        return Promise.all([
-            req.payload ? User.findById(req.payload.id).exec() : User.findOne({}).exec(),
-            Category.find({}, {}, opts).exec(),
-            Tender.aggregate([{
-                $group : {
-                    _id : "$category",
-                    "count" :  { $sum : 1 }
-                }
-            }]).exec()
-        ]).then(function(results) {
-            var user = results[0];
-            var categories = results[1];
-            var counts = results[2];
-            return res.status(200).json({
-                categories: categories.map((category) => {
-                    const cat = category.toJSONFor(user);
-                    const nb = counts.find(t => t._id.toString() == cat._id.toString());
-                    if(nb && typeof nb != 'undefined') {
-                        cat.nbTenders = nb.count;
+        return User.findOne(query).then(user => {
+            var aggregations = [
+                {   
+                    $lookup:      
+                    {        
+                        from: "articles",
+                        localField: "_id",
+                        foreignField : "category",
+                        as: "articles"
                     }
-                    return cat;
-                })
+                },
+                {   
+                    $lookup:      
+                    {        
+                        from: "tenders",
+                        localField: "_id",
+                        foreignField : "category",
+                        as: "tenders"
+                    }
+                },
+                { $addFields: { nbArticles: { $size: "$articles" }, nbTenders: { $size: "$tenders" }}}
+            ];
+
+            if(user){
+                aggregations.push({ $addFields: { isFavorite: { $in: [ "$_id", user.favorites ]}}});
+            }
+            aggregations.push({ $project: { articles:0, tenders:0 }});
+
+            var sort = { $sort: { createdAt: 1 } };
+            if(typeof req.query.sortBy !== 'undefined') { 
+                sort.$sort[req.query.sortBy] = req.query.sortDir ==='desc' ? 1 : -1; 
+            }
+            aggregations.push(sort);
+    
+            if(typeof req.query.size !== 'undefined' && req.query.size >= 1) {
+                aggregations.push({ $limit: Number(req.query.size) });
+            }
+            if(typeof req.query.page !== 'undefined' && req.query.page >= 1) {
+                aggregations.push({ $skip: Number((req.query.page - 1) * req.query.size) });
+            }
+
+            return Category.aggregate(aggregations).then(categories => {
+                return res.status(200).json({ categories: categories });
             });
         }).catch(next);
     }

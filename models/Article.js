@@ -24,7 +24,19 @@ var ArticleSchema = new mongoose.Schema({
   category: { type: mongoose.SchemaTypes.ObjectId, ref: 'category' },
   comments:[{ type: mongoose.SchemaTypes.ObjectId, ref: "comment" }],
   likes:[{ type: mongoose.SchemaTypes.ObjectId, ref: "like" }],
-}, { timestamps: true });
+}, {
+  timestamps: true,
+  toObject: {
+    transform: function(doc, ret){
+      delete ret.__v;
+    }
+  },
+  toJSON: {
+    transform: function(doc, ret){
+      delete ret.__v;
+    }
+  }
+});
 
 // Définition du plugin utilisé pour la validation d'un champ unique
 ArticleSchema.plugin(uniqueValidator, { message: 'already exists' });
